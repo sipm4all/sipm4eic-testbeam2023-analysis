@@ -141,7 +141,6 @@ void sipm4eic::finecalibration::load_calibration(std::string filename)
       string_in_stream >> current_data;
       data_by_field[current_field] = current_data;
     }
-    cout << "data_by_field[\"device\"]:" << data_by_field["device"] << " data_by_field[\"cindex\"]:" << std::stoi(data_by_field["cindex"]) << " data_by_field[\"IF\"]:" << std::stof(data_by_field["IF"]) << endl;
     this->set_calibration_unit(data_by_field["device"], std::stoi(data_by_field["cindex"]), {std::stof(data_by_field["IF"]), std::stof(data_by_field["CUT"]), std::stof(data_by_field["OFFSET"])});
   }
 };
@@ -280,6 +279,223 @@ void sipm4eic::finecalibration::calib_over_TDC_dist_(std::map<std::string, TH2F 
       //  Assign the values in the calibration object
       this->set_calibration_unit(current_device, iBin, {IF, CUT, 0});
       //  VEROBSE
-      }
+    }
   }
 }
+
+//
+//  --- --- --- Ongoing R&D DO NOT USE
+/*
+std::map<std::string, TH3F *> sipm4eic::finecalibration::make_fine_DeltaT_dist_(std::string dirname, std::vector<std::string> target_devices, std::string outfilename = "finedata.root", unsigned int max_spill = kMaxUInt, int frame_size = 256)
+{
+  //  Output file
+  std::map<std::string, TH3F *> h_fine_device;
+  std::vector<std::string> filenames;
+  for (auto device : target_devices)
+  {
+    for (int ififo = 0; ififo < 25; ++ififo)
+    {
+      std::string filename = dirname + "/" + device + "/decoded/alcdaq.fifo_" + std::to_string(ififo) + ".root";
+      filenames.push_back(filename);
+    }
+  }
+  //  Framer initialisation
+  std::cout << " --- initialize framer: frame size = " << frame_size << std::endl;
+  sipm4eic::framer framer(filenames, frame_size);
+  framer.set_trigger_coarse_offset(192, 112);
+  //  Loop over spills
+  int n_spills = 0, n_frames = 0;
+  for (int ispill = 0; ispill < max_spill && framer.next_spill(); ++ispill)
+  {
+    //  Loop over frames
+    for (auto &[iframe, aframe] : framer.frames())
+    {
+      //  Loop over devices
+      for (auto &[idevice, adevice] : aframe)
+      {
+        if (!h_fine_device.count(device_int2string[idevice]))
+          h_fine_device[device_int2string[idevice]] = new TH3F(Form("hFine_%d", idevice), "hFine", 768, 0, 768, 256, 0, 256, 1000, -10, 10);
+        //  Loop over chips
+        for (auto &[ichip, achip] : adevice.hits)
+        {
+          //  Loop over channels
+          for (auto &[ichannel, hits] : achip)
+          {
+            auto hit = hits[0];
+            //  Loop over hits
+            //  for (auto &hit : hits)
+            //{
+            auto current_index = hit.device_index();
+            auto current_tdc = hit.tdc;
+            auto current_cindex = current_tdc + 4 * current_index;
+            auto current_rollover = hit.rollover;
+            auto current_coarse = hit.coarse;
+            auto current_fine = hit.fine;
+            auto current_time = current_rollover * sipm4eic::rollover_to_ns + current_coarse * sipm4eic::coarse_to_ns;
+            // auto current_deltaT = current_time - timing_signal;
+            // h_fine_device[device_int2string[idevice]]->Fill(current_cindex, current_fine, current_deltaT);
+            // cout << "timing_signal: " << timing_signal << "current_time: " << current_time << " current_cindex: " << current_cindex << " current_fine: " << current_fine << " current_deltaT: " << current_deltaT << endl;
+            // } //  End of Hits loop
+          } //  End of Channel loop
+        }   //  End of Chip loop
+      }     //  End of Device loop
+    }       //  End of Frame loop
+    std::cout << "     spill completed " << std::endl;
+  } //  End of Spill loop
+  // Output
+  auto fout = TFile::Open("finedata.root", "RECREATE");
+  for (auto &h : h_fine_device)
+    h.second->Write();
+  fout->Close();
+  return h_fine_device;
+}
+
+std::map<std::string, TH3F *> sipm4eic::finecalibration::make_fine_DeltaT_dist_(std::string dirname, std::vector<std::string> target_devices, std::string outfilename = "finedata.root", unsigned int max_spill = kMaxUInt, int frame_size = 256)
+{
+  //  Output file
+  std::map<std::string, TH3F *> h_fine_device;
+  std::vector<std::string> filenames;
+  for (auto device : target_devices)
+  {
+    for (int ififo = 0; ififo < 25; ++ififo)
+    {
+      std::string filename = dirname + "/" + device + "/decoded/alcdaq.fifo_" + std::to_string(ififo) + ".root";
+      filenames.push_back(filename);
+    }
+  }
+  //  Framer initialisation
+  std::cout << " --- initialize framer: frame size = " << frame_size << std::endl;
+  sipm4eic::framer framer(filenames, frame_size);
+  framer.set_trigger_coarse_offset(192, 112);
+  //  Loop over spills
+  int n_spills = 0, n_frames = 0;
+  for (int ispill = 0; ispill < max_spill && framer.next_spill(); ++ispill)
+  {
+    //  Loop over frames
+    for (auto &[iframe, aframe] : framer.frames())
+    {
+      bool skipevent_bad_timing = true;
+      std::map<int, float> chip_timing_signal;
+      float timing_signal = 0.;
+      //  Loop on timing frames
+      for (auto &[ichip, achip] : aframe[207].hits)
+      {
+        //  Timing information per chip
+        int channel_check = 0;
+        chip_timing_signal[ichip] = 0;
+        for (auto &[ichannel, hits] : achip)
+        {
+          auto hit = hits[0];
+          channel_check++;
+          auto current_index = hit.device_index();
+          auto current_tdc = hit.tdc;
+          auto current_cindex = current_tdc + 4 * current_index;
+          auto current_rollover = hit.rollover;
+          auto current_coarse = hit.coarse;
+          auto current_fine = hit.fine;
+          auto ref_time = current_rollover * sipm4eic::rollover_to_ns + (current_coarse - this->get_phase("kc705-207", current_cindex, current_fine)) * sipm4eic::coarse_to_ns;
+          chip_timing_signal[ichip] += ref_time;
+        } //  End of Channel loop
+        skipevent_bad_timing *= (channel_check == 32);
+        //  Calculate average time for timing chips
+        chip_timing_signal[ichip] /= 32;
+      }
+      if (skipevent_bad_timing)
+        continue;
+      auto number_of_chips = 0;
+      auto average_timing_of_chips = 0;
+      for (auto [current_chip, current_timing] : chip_timing_signal)
+      {
+        number_of_chips++;
+        average_timing_of_chips += current_timing;
+      }
+      timing_signal = average_timing_of_chips / number_of_chips;
+      //  Loop over devices
+      for (auto &[idevice, adevice] : aframe)
+      {
+        if (idevice == 207)
+          continue;
+        if (!h_fine_device.count(device_int2string[idevice]))
+          h_fine_device[device_int2string[idevice]] = new TH3F(Form("hFine_%d", idevice), "hFine", 768, 0, 768, 256, 0, 256, 1000, -10, 10);
+        for (auto &[ichip, achip] : adevice.hits)
+        {
+          for (auto &[ichannel, hits] : achip)
+          {
+            auto hit = hits[0];
+            // for (auto &hit : hits)
+            //{
+            auto current_index = hit.device_index();
+            auto current_tdc = hit.tdc;
+            auto current_cindex = current_tdc + 4 * current_index;
+            auto current_rollover = hit.rollover;
+            auto current_coarse = hit.coarse;
+            auto current_fine = hit.fine;
+            auto current_time = current_rollover * sipm4eic::rollover_to_ns + current_coarse * sipm4eic::coarse_to_ns;
+            auto current_deltaT = current_time - timing_signal;
+            h_fine_device[device_int2string[idevice]]->Fill(current_cindex, current_fine, current_deltaT);
+            cout << "timing_signal: " << timing_signal << "current_time: " << current_time << " current_cindex: " << current_cindex << " current_fine: " << current_fine << " current_deltaT: " << current_deltaT << endl;
+            //} //  End of Hits loop
+          } //  End of Channel loop
+        }   //  End of Chip loop
+      }     //  End of Device loop
+    }       //  End of Frame loop
+    std::cout << "     spill completed " << std::endl;
+  } //  End of Spill loop
+  // Output
+  auto fout = TFile::Open("finedata.root", "RECREATE");
+  for (auto &h : h_fine_device)
+    h.second->Write();
+  fout->Close();
+  return h_fine_device;
+}
+void sipm4eic::finecalibration::calib_over_DeltaT_dist_(std::map<std::string, TH3F *> DeltaT_dist, std::vector<std::string> target_devices)
+{
+  //  Loop over available TDC distributions
+  for (auto [current_device, current_calib_histo] : DeltaT_dist)
+  {
+    //  Only consider target devices
+    if (std::find(target_devices.begin(), target_devices.end(), current_device) == target_devices.end())
+      continue;
+    //  Take 2D TDC distribution for fit
+    for (auto iBin = 1; iBin <= current_calib_histo->GetNbinsX(); iBin++)
+    {
+      //  Take slice to act on single TDC
+      auto current_histo = current_calib_histo->ProjectionY("tmp", iBin, iBin);
+      //  Book results variable
+      auto IF = 0.;
+      auto CUT = 0.;
+      auto OFFSET = 0.;
+      //  If
+      if (current_histo->GetEntries() < 1)
+      {
+        //  Assign dummy values in the calibration object
+        this->set_calibration_unit(current_device, iBin, {IF, CUT, OFFSET});
+        continue;
+      }
+      //  Setup fit function
+      fine_analysis_fit_function->SetParameter(0, current_histo->GetBinContent(70));
+      fine_analysis_fit_function->SetParameter(1, 100);
+      fine_analysis_fit_function->SetParLimits(1, 80, 120);
+      fine_analysis_fit_function->SetParameter(2, 0.5);
+      fine_analysis_fit_function->SetParLimits(2, 0.1, 1.);
+      fine_analysis_fit_function->SetParameter(3, 35);
+      fine_analysis_fit_function->SetParLimits(3, 15, 55);
+      fine_analysis_fit_function->SetParameter(4, 0.5);
+      fine_analysis_fit_function->SetParLimits(4, 0.1, 1.);
+      //  Fit Fine distribution
+      current_histo->Fit(fine_analysis_fit_function, "IMRESQ", "", 20, 120);
+      //  Recover MIN and MAX from fit
+      auto maximum = fine_analysis_fit_function->GetParameter(1);
+      auto minimum = fine_analysis_fit_function->GetParameter(3);
+      //  Calculate IF and CUT
+      IF = maximum - minimum;
+      CUT = 0.5 * (minimum + maximum);
+      //  Assign the values in the calibration object
+      this->set_calibration_unit(current_device, iBin, {IF, CUT, 0});
+      //  VEROBSE
+      //  cout << "Device: " << current_device.c_str() << " - iBin: " << iBin << " - minimum: " << minimum << " - maximum: " << maximum << " - IF: " << IF << " - CUT: " << CUT << endl;
+    }
+  }
+}
+//
+*/
