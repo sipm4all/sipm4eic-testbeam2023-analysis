@@ -2,7 +2,7 @@ std::vector<int> devices_indices = {192, 193, 194, 195, 196, 197, 198, 207};
 
 TF1 *f_fit = new TF1("f_fit", "[0]*(1./(exp(([1]-x)/[2])+1))*(1./(exp((x-[3])/[4])+1))", 10., 200.);
 
-void finecalib_step0(std::string input_filename, std::string output_filename = "finecalib_step0.root", int minimum_entries = 1)
+void finecalib_step0(std::string input_filename, std::string output_filename = "finecalib_step0.root", int minimum_entries = 1000, bool use_fit = true)
 {
   //  Open file with TDC fine distributions
   TFile *input_file = new TFile(input_filename.c_str());
@@ -61,15 +61,16 @@ void finecalib_step0(std::string input_filename, std::string output_filename = "
       }
       f_fit->SetParameter(0, height_guess);
       f_fit->SetParameter(1, min_guess);
-      f_fit->SetParLimits(1, min_guess*0.8, min_guess*1.2);
+      f_fit->SetParLimits(1, min_guess * 0.8, min_guess * 1.2);
       f_fit->SetParameter(2, 0.5);
       f_fit->SetParLimits(2, 0.1, 1.);
       f_fit->SetParameter(3, max_guess);
-      f_fit->SetParLimits(3, max_guess*0.8, max_guess*1.2);
+      f_fit->SetParLimits(3, max_guess * 0.8, max_guess * 1.2);
       f_fit->SetParameter(4, 0.5);
       f_fit->SetParLimits(4, 0.1, 1.);
       //  Fit Fine distribution
-      current_histo->Fit(f_fit, "IMRESQ", "", 20, 120);
+      if (use_fit)
+        current_histo->Fit(f_fit, "IMRESQ", "", 20, 120);
       //  Recover MIN and MAX from fit
       auto minimum = f_fit->GetParameter(1);
       auto maximum = f_fit->GetParameter(3);
