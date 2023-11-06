@@ -83,8 +83,6 @@ void finecalib_step0(std::string input_filename, std::string output_filename = "
     outfile->cd();
     hIF->Write();
     hCUT->Write();
-    break;
-    
   }
   outfile->Close();
 }
