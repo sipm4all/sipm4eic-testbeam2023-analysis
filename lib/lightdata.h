@@ -12,6 +12,13 @@ class lightdata {
   unsigned char fine = 0;
   unsigned char tdc = 0;
 
+ lightdata() :
+    device(0),
+    index(0),
+    coarse(0),
+    fine(0),
+    tdc(0) { };
+
   lightdata(unsigned char _device, unsigned char _index, unsigned char _coarse, unsigned char _fine, unsigned char _tdc) :
     device(_device),
     index(_index),
