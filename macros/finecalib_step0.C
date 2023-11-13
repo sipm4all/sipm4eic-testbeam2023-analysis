@@ -14,7 +14,7 @@ void finecalib_step0(std::string input_filename, std::string output_filename = "
     if (!current_calib_histo)
       continue;
     cout << "[INFO] Starting device " << current_device_index << endl;
-    TH1F *hIF = new TH1F(Form("hIF_%i", current_device_index), "hIF", 768, 0, 768);
+    TH1F *hIIF = new TH1F(Form("hIIF_%i", current_device_index), "hIIF", 768, 0, 768);
     TH1F *hCUT = new TH1F(Form("hCUT_%i", current_device_index), "hCUT", 768, 0, 768);
     //  Take 2D TDC distribution for fit
     for (auto iBin = 1; iBin <= current_calib_histo->GetNbinsX(); iBin++)
@@ -22,8 +22,6 @@ void finecalib_step0(std::string input_filename, std::string output_filename = "
       //  Take slice to act on single TDC
       auto current_histo = current_calib_histo->ProjectionY("tmp", iBin, iBin);
       //  Book results variable
-      auto IF = 0.;
-      auto CUT = 0.;
       //  If no entries, skip fit
       if (current_histo->GetEntries() < minimum_entries)
       {
@@ -48,19 +46,19 @@ void finecalib_step0(std::string input_filename, std::string output_filename = "
       f_fit->SetParLimits(4, 0.1, 1.);
       //  Fit Fine distribution
       if (use_fit)
-        current_histo->Fit(f_fit, "IMRESQ", "", 20, 120);
+        current_histo->Fit(f_fit, "0Q", "", 20, 120);
       //  Recover MIN and MAX from fit
       auto minimum = f_fit->GetParameter(1);
       auto maximum = f_fit->GetParameter(3);
-      //  Calculate IF and CUT
-      IF = maximum - minimum;
-      CUT = 0.5 * (minimum + maximum);
+      //  Calculate inverse IF and CUT
+      auto IIF = 1. / (maximum - minimum);
+      auto CUT = 0.5 * (minimum + maximum);
       //  Assign the values in the calibration object
-      hIF->SetBinContent(iBin, IF);
+      hIIF->SetBinContent(iBin, IIF);
       hCUT->SetBinContent(iBin, CUT);
     }
     outfile->cd();
-    hIF->Write();
+    hIIF->Write();
     hCUT->Write();
   }
   outfile->Close();

@@ -46,12 +46,20 @@ fillfine(std::string dirname, std::string outfilename = "finedata.root", unsigne
     std::cout << " --- new spill: " << ispill << std::endl;
 
     /** loop over frames **/
-    for (auto &[iframe, aframe] : framer.frames()) {
+    for (auto &frame : framer.frames()) {
+      auto iframe = frame.first;
+      auto aframe = frame.second;
 
       /** fill hits **/
-      for (auto &[idevice, adevice] : aframe) {
-	for (auto &[ichip, achip] : adevice.hits) {
-	  for (auto &[ichannel, hits] : achip) {
+      for (auto &device : aframe) {
+	auto idevice = device.first;
+	auto adevice = device.second;
+	for (auto &chip : adevice.hits) {
+	  auto ichip = chip.first;
+	  auto achip = chip.second;
+	  for (auto &channel : achip) {
+	    auto ichannel = channel.first;
+	    auto hits = channel.second;
 	    for (auto &hit : hits) {
 
               auto device = idevice;
@@ -72,9 +80,12 @@ fillfine(std::string dirname, std::string outfilename = "finedata.root", unsigne
     std::cout << "     spill completed " << std::endl;
   } /** end of loop over spills **/
 
+  std::cout << " --- writing output file: " << outfilename << std::endl;
   auto fout = TFile::Open(outfilename.c_str(), "RECREATE");
   for (auto &h : h_fine_device)
     h.second->Write();
   fout->Close();  
+
+  std::cout << " --- completed " << std::endl;
 
 }
