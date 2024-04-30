@@ -20,6 +20,10 @@ std::map<std::string, int> devices_name = {
     {"kc705-196", 196},
     {"kc705-197", 197},
     {"kc705-198", 198},
+    {"kc705-199", 199},
+    {"kc705-200", 200},
+    {"kc705-201", 201},
+    {"kc705-202", 202},
     {"kc705-207", 207}};
 std::map<int, int> devices_enum = {
     {192, 0},
@@ -29,27 +33,31 @@ std::map<int, int> devices_enum = {
     {196, 4},
     {197, 5},
     {198, 6},
-    {207, 7}};
+    {199, 7},
+    {200, 8},
+    {201, 9},
+    {202, 10},
+    {207, 11}};
 
-void lightQA(std::string input_file = "lightdata.root", std::string output_file = "out.root", std::string save_dir = ".")
+void lightQA(std::string input_file = "lightdata.root", std::string output_file = "out.root", std::string save_dir = "./images/")
 {
   //  Define output objects
   //  === Trigger
-  auto hTriggerHitsTimeInSpill = new TH2F("hTriggerHitsTimeInSpill", ";trigger channels time;entries", 1050, -0.1, 1, 99, 1, 100);
-  auto hTriggerChannelInFrame = new TH2F("hTriggerChannelInFrame", ";trigger channels fired;entries", 200, 0, 200, 99, 1, 100);
+  auto hTriggerHitsTimeInSpill = new TH2F("hTriggerHitsTimeInSpill", ";trigger channels time (s);entries", 1050, -0.1, 1, 99, 1, 100);
+  auto hTriggerChannelInFrame = new TH2F("hTriggerChannelInFrame", ";trigger channels fired;entries;entries", 200, 0, 200, 99, 1, 100);
   //  === Timing
-  auto hTimingChannelInFrame = new TH2F("hTimingChannelInFrame", ";timing channels fired;entries", 64, 0, 64, 99, 1, 100);
+  auto hTimingChannelInFrame = new TH2F("hTimingChannelInFrame", ";timing channels fired (s);entries;entries", 64, 0, 64, 99, 1, 100);
   auto hTimingChannelMap = new TH2F("hTimingChannelMap", ";timing channels on chip 0 fired;timing channels on chip 1 fired", 33, -0.5, 32.5, 33, -0.5, 32.5);
-  auto hTimingTimeResolution = new TH1F("hTimingTimeResolution", "", 400, -50, 50);
+  auto hTimingTimeResolution = new TH1F("hTimingTimeResolution", ";time chip o - time chip 1 (clock)", 400, -50, 50);
   //  === Cherenkov
-  auto hCherenkovChannelInFrame = new TH2F("hCherenkovChannelInFrame", ";cherenkov channels fired;entries", 200, 0, 200, 99, 1, 100);
+  auto hCherenkovChannelInFrame = new TH2F("hCherenkovChannelInFrame", ";cherenkov channels fired (s);entries;entries", 200, 0, 200, 99, 1, 100);
   //  === General
   std::map<std::array<int, 2>, TH1F *> hGenericCoincidenceMapwTrigger;
   for (auto [device_id, enumerator] : devices_enum)
   {
     for (auto iChip = 0; iChip < 6; iChip++)
     {
-      hGenericCoincidenceMapwTrigger[{enumerator, iChip}] = new TH1F(Form("hGenericCoincidenceMap_d%i_c%i", device_id, iChip), ";time - trigger;entries", 256 * 2, -256, 256);
+      hGenericCoincidenceMapwTrigger[{enumerator, iChip}] = new TH1F(Form("hGenericCoincidenceMap_d%i_c%i", device_id, iChip), ";time - trigger (clock);entries", 256 * 2, -256, 256);
     }
   }
 
@@ -77,10 +85,12 @@ void lightQA(std::string input_file = "lightdata.root", std::string output_file 
       // === Trigger
       auto trigger0_vector = io->get_trigger0_vector();
       hTriggerChannelInFrame->Fill(trigger0_vector.size(), current_spill);
-      auto trigger_time = -99999999.;
+      auto trigger_time = 0.;
       if (trigger0_vector.size() != 0)
+      {
         trigger_time = trigger0_vector[0].coarse;
-      hTriggerHitsTimeInSpill->Fill((trigger_time + 256 * (frame_id)) * sipm4eic::data::coarse_to_ns * 1.e-9, current_spill);
+        hTriggerHitsTimeInSpill->Fill((trigger_time + 256 * (frame_id)) * sipm4eic::data::coarse_to_ns * 1.e-9, current_spill);
+      }
 
       // === Timing
       auto timing_vector = io->get_timing_vector();
@@ -133,6 +143,7 @@ void lightQA(std::string input_file = "lightdata.root", std::string output_file 
   }
 
   gROOT->SetBatch();
+  system(Form("mkdir -p %s/", save_dir.c_str()));
 
   gStyle->SetPalette(kInvertedDarkBodyRadiator);
 
@@ -180,7 +191,7 @@ void lightQA(std::string input_file = "lightdata.root", std::string output_file 
     current_canvas = get_std_canvas();
     gPad->SetLogy();
     object->Draw();
-    current_canvas->SaveAs(Form("%s.png", object->GetName()));
+    current_canvas->SaveAs(Form("%s/%s.png", save_dir.c_str(), object->GetName()));
   }
 
   TFile *out = new TFile(output_file.c_str(), "RECREATE");
