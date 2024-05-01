@@ -1,6 +1,10 @@
 #include "../lib/framer.h"
 #include "../lib/lightio.h"
 
+#define TRIGGER_OFFSET 0
+#define SELECTION_LUCA 0
+#define SELECTION_TIMING 0
+
 const int frame_size = 256;
 
 std::vector<std::string> devices = {
@@ -43,7 +47,9 @@ lightwriter(std::vector<std::string> filenames, std::string outfilename, std::st
   std::cout << " --- initialize framer: frame size = " << frame_size << std::endl;
   sipm4eic::framer framer(filenames, frame_size);
   framer.verbose(verbose);
+#if TRIGGER_OFFSET
   framer.set_trigger_coarse_offset(192, 112);
+#endif
   
   /** loop over spills **/
   int n_spills = 0, n_frames = 0;
@@ -110,12 +116,16 @@ lightwriter(std::vector<std::string> filenames, std::string outfilename, std::st
       io->new_frame(iframe);
       
       /** selection on Luca's trigger, device 192 **/
+#if SELECTION_LUCA
       if (aframe[192].triggers.size() != 1) continue;
+#endif
       
       /** selection on timing scintillators, device 207 **/
+#if SELECTION_TIMING
       auto nsipm4 = aframe[207].hits[4].size();
       auto nsipm5 = aframe[207].hits[5].size();
       if (nsipm4 == 0 && nsipm5 == 0) continue;
+#endif
 
       /** fill trigger0 hits **/
       auto trigger0 = aframe[192].triggers;
