@@ -10,9 +10,9 @@ class lightio {
 
   static const int frame_size = 256;
   static const int max_devices = 256;
-  static const int max_frames = 65534;   // maximum number of frames in a spill
+  static const int max_frames = 1048576;   // maximum number of frames in a spill
   static const int max_triggers = 65534; // maximum number of triggers in a spill
-  static const int max_hits = 262144;   // maximum number of hits in a spill
+  static const int max_hits = 16777216;   // maximum number of hits in a spill, needs "ulimit -s unlimited"
 
   unsigned char part_n;
   unsigned char part_device[max_devices];
@@ -22,7 +22,7 @@ class lightio {
   unsigned char dead_device[max_devices];
   unsigned int dead_mask[max_devices];
   //  
-  unsigned short frame_n;         // number of frames
+  unsigned int frame_n;         // number of frames
   unsigned int frame[max_frames]; // frame index
   //
   unsigned int trigger0_size;           // trigger hits in spill
@@ -207,7 +207,7 @@ lightio::write_to_tree(TTree *t)
   t->Branch("dead_n", &dead_n, "dead_n/b");
   t->Branch("dead_device", &dead_device, "dead_device[dead_n]/b");
   t->Branch("dead_mask", &dead_mask, "dead_mask[dead_n]/i");
-  t->Branch("frame_n", &frame_n, "frame_n/s");
+  t->Branch("frame_n", &frame_n, "frame_n/i");
   t->Branch("frame", &frame, "frame[frame_n]/i");
   t->Branch("trigger0_size", &trigger0_size, "trigger0_size/i");
   t->Branch("trigger0_n", &trigger0_n, "trigger0_n[frame_n]/b");
