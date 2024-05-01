@@ -17,13 +17,13 @@ std::vector<std::string> devices = {
 void
 lightwriter(std::vector<std::string> filenames, std::string outfilename, std::string fineoutfilename, unsigned int max_spill = kMaxUInt, bool verbose = false)
 {
-
+  
   /**
    ** CREATE OUTPUT TREE
    **/
 
-  sipm4eic::lightio io;
-  io.write_to_tree(outfilename);
+  auto io = new sipm4eic::lightio;
+  io->write_to_tree(outfilename);
 
   /** 
    ** FINE OUTPUT 
@@ -85,17 +85,17 @@ lightwriter(std::vector<std::string> filenames, std::string outfilename, std::st
      ** LIGHT DATA
      **/
     
-    io.new_spill(ispill);
+    io->new_spill(ispill);
 
     for (auto &part : framer.part_mask()) {
       auto idevice = part.first;
       auto amask = part.second;
-      io.add_part(idevice, amask);
+      io->add_part(idevice, amask);
     }
     for (auto &dead : framer.dead_mask()) {
       auto idevice = dead.first;
       auto amask = dead.second;
-      io.add_dead(idevice, amask);
+      io->add_dead(idevice, amask);
     }
 
     /** loop over frames **/
@@ -103,7 +103,7 @@ lightwriter(std::vector<std::string> filenames, std::string outfilename, std::st
       auto iframe = frame.first;
       auto aframe = frame.second;
 
-      io.new_frame(iframe);
+      io->new_frame(iframe);
       
       /** selection on Luca's trigger, device 192 **/
       if (aframe[192].triggers.size() != 1) continue;
@@ -116,7 +116,7 @@ lightwriter(std::vector<std::string> filenames, std::string outfilename, std::st
       /** fill trigger0 hits **/
       auto trigger0 = aframe[192].triggers;
       for (auto &trigger : trigger0)
-	io.add_trigger0(trigger.coarse_time_clock() - iframe * frame_size);
+	io->add_trigger0(trigger.coarse_time_clock() - iframe * frame_size);
 
       /** fill timing hits **/
       for (auto &chip : aframe[207].hits) {
@@ -127,7 +127,7 @@ lightwriter(std::vector<std::string> filenames, std::string outfilename, std::st
 	  auto hits = channel.second;
 	  for (auto &hit : hits) {
 	    auto coarse = hit.coarse_time_clock() - iframe * frame_size;
-	    io.add_timing(207, hit.device_index(), coarse, hit.fine, hit.tdc);
+	    io->add_timing(207, hit.device_index(), coarse, hit.fine, hit.tdc);
 	  }}}
 		
       /** fill cherenkov hits **/
@@ -143,16 +143,16 @@ lightwriter(std::vector<std::string> filenames, std::string outfilename, std::st
 	    auto hits = channel.second;
 	    for (auto &hit : hits) {
 	      auto coarse = hit.coarse_time_clock() - iframe * frame_size;
-	      io.add_cherenkov(idevice, hit.device_index(), coarse, hit.fine, hit.tdc);
+	      io->add_cherenkov(idevice, hit.device_index(), coarse, hit.fine, hit.tdc);
 	    }}}
 	
       } /** end of loop over devices and hits **/
 
-      io.add_frame();
+      io->add_frame();
       
     } /** end of loop over frames **/
 
-    io.fill();
+    io->fill();
     ++n_spills;
 
   } /** end of loop over spills **/
@@ -162,7 +162,7 @@ lightwriter(std::vector<std::string> filenames, std::string outfilename, std::st
    **/
 
   std::cout << " --- writing light data output file: " << outfilename << std::endl;
-  io.write_and_close();
+  io->write_and_close();
 
   if (!fineoutfilename.empty()) {
     std::cout << " --- writing fine data output file: " << fineoutfilename << std::endl;
