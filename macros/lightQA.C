@@ -15,6 +15,9 @@ const float min_tspill = -0.1; // [s]
 const float max_tspill = 0.6; // [s]
 const int max_nspill = 100;
 
+const float min_tdelta = -25; // [clock]
+const float max_tdelta = 25; // [clock]
+
 TCanvas *get_std_canvas()
 {
   TCanvas *result = new TCanvas("", "", 800, 800);
@@ -57,14 +60,14 @@ void lightQA(std::string input_file = "lightdata.root", std::string output_file 
 {
   //  Define output objects
   //  === Trigger
-  auto hTriggerHitsTimeInSpill = new TH2F("hTriggerHitsTimeInSpill", "Trigger readout;trigger time (s);entries", 1000 * (max_tspill - min_tspill), min_tspill, max_tspill, max_nspill, 0, max_nspill);
-  auto hTriggerChannelInFrame = new TH2F("hTriggerChannelInFrame", "Trigger readout occupancy;number of triggers;spill;number of frames", 10, 0, 10, max_nspill, 0, max_nspill);
+  auto hTriggerHitsTimeInSpill = new TH2F("hTriggerHitsTimeInSpill", "TRIGGER readout;trigger time (s);entries", 1000 * (max_tspill - min_tspill), min_tspill, max_tspill, max_nspill, 0, max_nspill);
+  auto hTriggerChannelInFrame = new TH2F("hTriggerChannelInFrame", "TRIGGER readout occupancy;number of triggers;spill;number of frames", 10, 0, 10, max_nspill, 0, max_nspill);
   //  === Timing
-  auto hTimingChannelInFrame = new TH2F("hTimingChannelInFrame", "Timing readout occupancy;number of channels;spill;number of frames", 80, 0, 80, max_nspill, 0, max_nspill);
-  auto hTimingChannelMap = new TH2F("hTimingChannelMap", "Timing readout occupancy;number of channels (TIME-1);number of channels (TIME-2)", 40, 0, 40, 40, 0, 40);
-  auto hTimingTimeResolution = new TH1F("hTimingTimeResolution", ";time chip o - time chip 1 (clock)", 400, -50, 50);
+  auto hTimingChannelInFrame = new TH2F("hTimingChannelInFrame", "TIMING readout occupancy;number of channels;spill;number of frames", 80, 0, 80, max_nspill, 0, max_nspill);
+  auto hTimingChannelMap = new TH2F("hTimingChannelMap", "TIMING readout occupancy;number of channels (TIMING 1);number of channels (TIMING 2)", 40, 0, 40, 40, 0, 40);
+  auto hTimingTimeResolution = new TH1F("hTimingTimeResolution", "TIMING time coincidences;TIMING 1 - TIMING 2 (clock cycles);", max_tdelta - min_tdelta, min_tdelta, max_tdelta);
   //  === Cherenkov
-  auto hCherenkovChannelInFrame = new TH2F("hCherenkovChannelInFrame", "Cherenkov readout occupancy;number of channels;spill;number of frames", 200, 0, 200, max_nspill, 0, max_nspill);
+  auto hCherenkovChannelInFrame = new TH2F("hCherenkovChannelInFrame", "CHERENKOV readout occupancy;number of channels;spill;number of frames", 200, 0, 200, max_nspill, 0, max_nspill);
   //  === General
   std::map<std::array<int, 2>, TH1F *> hGenericCoincidenceMapwTrigger;
   for (auto [device_id, enumerator] : devices_enum)
@@ -136,7 +139,7 @@ void lightQA(std::string input_file = "lightdata.root", std::string output_file 
       }
 
       if (contributors_second_chip != 0 && contributors_first_chip != 0) // otherwise we risk division by zero
-	hTimingTimeResolution->Fill((time_second_chip / contributors_second_chip) - (time_first_chip / contributors_first_chip));
+	hTimingTimeResolution->Fill((time_first_chip / contributors_first_chip) - (time_second_chip / contributors_second_chip));
 
       hTimingChannelInFrame->Fill(timing_first_channels_times.size() + timing_second_channels_times.size(), current_spill);
       hTimingChannelMap->Fill(contributors_first_chip, contributors_second_chip);
@@ -170,9 +173,9 @@ void lightQA(std::string input_file = "lightdata.root", std::string output_file 
 
   current_canvas = get_std_canvas();
   gPad->SetLogy();
-  gStyle->SetOptStat(1111);
-  gStyle->SetOptFit(1);
-  hTimingTimeResolution->Fit("gaus", "IMQ", "", -10, 10);
+  //  gStyle->SetOptStat(1111);
+  //  gStyle->SetOptFit(1);
+  //  hTimingTimeResolution->Fit("gaus", "IMQ", "", -10, 10);
   hTimingTimeResolution->Draw();
   current_canvas->SaveAs(Form("%s/hTimingTimeResolution.png", save_dir.c_str()));
 
