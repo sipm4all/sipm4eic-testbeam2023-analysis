@@ -1,6 +1,16 @@
 #include "../lib/lightio.h"
 #include "../lib/data.h"
 
+int TRIGGER0_device = 192;
+int TRIGGER0_offset = 112;
+
+int TIMING1_device = 200, TIMING1_chip = 5;
+int TIMING2_device = 201, TIMING2_chip = 5;
+
+int TRACKING1_device = 200, TRACKING1_chip = 4;
+int TRACKING2_device = 201, TRACKING2_chip = 4;
+
+
 const float min_tspill = -0.1; // [s]
 const float max_tspill = 0.6; // [s]
 const int max_nspill = 100;
@@ -98,7 +108,7 @@ void lightQA(std::string input_file = "lightdata.root", std::string output_file 
 
       // === Timing
       auto timing_vector = io->get_timing_vector();
-      std::map<int, std::vector<float>> timing_channels_times;
+      std::map<int, std::vector<float>> timing_first_channels_times, timing_second_channels_times;
       auto contributors_first_chip = 0;
       auto contributors_second_chip = 0;
       auto time_first_chip = 0.;
@@ -109,24 +119,26 @@ void lightQA(std::string input_file = "lightdata.root", std::string output_file 
         auto timing_device = devices_enum[timing.device];
         auto timing_chip = timing.chip();
         auto timing_channel = timing.eoch();
-        timing_channels_times[timing_channel].push_back(timing_coarse);
-        hGenericCoincidenceMapwTrigger[{timing_device, timing_chip}]->Fill(timing_coarse - trigger_time);
+
+	hGenericCoincidenceMapwTrigger[{timing_device, timing_chip}]->Fill(timing_coarse - trigger_time);
+	if (timing.device == TIMING1_device && timing.chip() == TIMING1_chip)
+	  timing_first_channels_times[timing_channel].push_back(timing_coarse);
+	else if (timing.device == TIMING2_device && timing.chip() == TIMING2_chip)
+	  timing_second_channels_times[timing_channel].push_back(timing_coarse);
       }
-      for (auto [timing_channel, timing_time] : timing_channels_times)
-      {
-        if (timing_channel > 31)
-        {
-          time_first_chip += timing_time[0];
-          contributors_first_chip++;
-        }
-        else
-        {
+      for (auto [timing_channel, timing_time] : timing_first_channels_times) {
+	time_first_chip += timing_time[0];
+	contributors_first_chip++;
+      }
+      for (auto [timing_channel, timing_time] : timing_second_channels_times) {
           time_second_chip += timing_time[0];
           contributors_second_chip++;
-        }
       }
-      hTimingTimeResolution->Fill((time_second_chip / contributors_second_chip) - (time_first_chip / contributors_first_chip));
-      hTimingChannelInFrame->Fill(timing_channels_times.size(), current_spill);
+
+      if (contributors_second_chip != 0 && contributors_first_chip != 0) // otherwise we risk division by zero
+	hTimingTimeResolution->Fill((time_second_chip / contributors_second_chip) - (time_first_chip / contributors_first_chip));
+
+      hTimingChannelInFrame->Fill(timing_first_channels_times.size() + timing_second_channels_times.size(), current_spill);
       hTimingChannelMap->Fill(contributors_first_chip, contributors_second_chip);
 
       // === Cherenkov
@@ -166,25 +178,25 @@ void lightQA(std::string input_file = "lightdata.root", std::string output_file 
 
   current_canvas = get_std_canvas();
   gPad->SetLogy();
-  auto hTriggerChannelTimeInSpillIntegrated = hTriggerHitsTimeInSpill->ProjectionX("hTriggerChannelTimeInSpillIntegrated", 0, 99);
+  auto hTriggerChannelTimeInSpillIntegrated = hTriggerHitsTimeInSpill->ProjectionX("hTriggerChannelTimeInSpillIntegrated");
   hTriggerChannelTimeInSpillIntegrated->Draw();
   current_canvas->SaveAs(Form("%s/hTriggerChannelTimeInSpillIntegrated.png", save_dir.c_str()));
 
   current_canvas = get_std_canvas();
   gPad->SetLogy();
-  auto hTriggerChannelInFrameIntegrated = hTriggerChannelInFrame->ProjectionX("hTriggerChannelInFrameIntegrated", 0, 99);
+  auto hTriggerChannelInFrameIntegrated = hTriggerChannelInFrame->ProjectionX("hTriggerChannelInFrameIntegrated");
   hTriggerChannelInFrameIntegrated->Draw();
   current_canvas->SaveAs(Form("%s/hTriggerChannelInFrameIntegrated.png", save_dir.c_str()));
 
   current_canvas = get_std_canvas();
   gPad->SetLogy();
-  auto hTimingChannelInFrameIntegrated = hTimingChannelInFrame->ProjectionX("hTimingChannelInFrameIntegrated", 0, 99);
+  auto hTimingChannelInFrameIntegrated = hTimingChannelInFrame->ProjectionX("hTimingChannelInFrameIntegrated");
   hTimingChannelInFrameIntegrated->Draw();
   current_canvas->SaveAs(Form("%s/hTimingChannelInFrameIntegrated.png", save_dir.c_str()));
 
   current_canvas = get_std_canvas();
   gPad->SetLogy();
-  auto hCherenkovChannelInFrameIntegrated = hCherenkovChannelInFrame->ProjectionX("hCherenkovChannelInFrameIntegrated", 0, 99);
+  auto hCherenkovChannelInFrameIntegrated = hCherenkovChannelInFrame->ProjectionX("hCherenkovChannelInFrameIntegrated");
   hCherenkovChannelInFrameIntegrated->Draw();
   current_canvas->SaveAs(Form("%s/hCherenkovChannelInFrameIntegrated.png", save_dir.c_str()));
 
