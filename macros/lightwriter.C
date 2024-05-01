@@ -183,6 +183,9 @@ lightwriter(std::vector<std::string> filenames, std::string outfilename, std::st
 	      if ( (idevice == TIMING1_device && ichip == TIMING1_chip) ||
 		   (idevice == TIMING2_device && ichip == TIMING2_chip) ) 
 		io->add_timing(idevice, hit.device_index(), coarse, hit.fine, hit.tdc);
+	      else if ( (idevice == TRACKING1_device && ichip == TRACKING1_chip) ||
+			(idevice == TRACKING2_device && ichip == TRACKING2_chip) ) 
+		io->add_tracking(idevice, hit.device_index(), coarse, hit.fine, hit.tdc);
 	      else
 		io->add_cherenkov(idevice, hit.device_index(), coarse, hit.fine, hit.tdc);
 	    }}}
