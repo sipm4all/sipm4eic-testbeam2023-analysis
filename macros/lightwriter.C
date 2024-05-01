@@ -1,11 +1,23 @@
 #include "../lib/framer.h"
 #include "../lib/lightio.h"
 
-#define TRIGGER_OFFSET 0
-#define SELECTION_LUCA 0
-#define SELECTION_TIMING 0
-
 const int frame_size = 256;
+
+bool apply_minimal_selection = true;
+bool apply_trigger0_selection = false;
+bool apply_timing_selection_OR = false;
+bool apply_timing_selection_AND = false;
+bool apply_tracking_selection_OR = false;
+bool apply_tracking_selection_AND = false;
+
+int TRIGGER0_device = 192;
+int TRIGGER0_offset = 112;
+
+int TIMING1_device = 200, TIMING1_chip = 5;
+int TIMING2_device = 201, TIMING2_chip = 5;
+
+int TRACKING1_device = 200, TRACKING1_chip = 4;
+int TRACKING2_device = 201, TRACKING2_chip = 4;
 
 std::vector<std::string> devices = {
   "kc705-192",
@@ -48,7 +60,7 @@ lightwriter(std::vector<std::string> filenames, std::string outfilename, std::st
   sipm4eic::framer framer(filenames, frame_size);
   framer.verbose(verbose);
 #if TRIGGER_OFFSET
-  framer.set_trigger_coarse_offset(192, 112);
+  framer.set_trigger_coarse_offset(TRIGGER0_device, TRIGGER0_offset);
 #endif
   
   /** loop over spills **/
@@ -114,24 +126,35 @@ lightwriter(std::vector<std::string> filenames, std::string outfilename, std::st
       auto aframe = frame.second;
 
       io->new_frame(iframe);
+
+      /** information to define selections **/
+      auto TRIGGER0_n = aframe[TRIGGER0_device].triggers.size();
+      auto TIMING1_n = aframe[TIMING1_device].hits[TIMING1_chip].size();
+      auto TIMING2_n = aframe[TIMING2_device].hits[TIMING2_chip].size();
+      auto TRACKING1_n = aframe[TRACKING1_device].hits[TRACKING1_chip].size();
+      auto TRACKING2_n = aframe[TRACKING2_device].hits[TRACKING2_chip].size();
+
+      /** minimal selection **/
+      if ( apply_minimal_selection &&
+	   ( TRIGGER0_n == 0 && TIMING1_n == 0 && TIMING2_n == 0 && TRACKING1_n == 0 && TRACKING2_n == 0) ) continue;
       
-      /** selection on Luca's trigger, device 192 **/
-#if SELECTION_LUCA
-      if (aframe[192].triggers.size() != 1) continue;
-#endif
+      /** selection on Luca's trigger **/
+      if ( apply_trigger0_selection && TRIGGER0_n == 0 ) continue;
       
-      /** selection on timing scintillators, device 207 **/
-#if SELECTION_TIMING
-      auto nsipm4 = aframe[207].hits[4].size();
-      auto nsipm5 = aframe[207].hits[5].size();
-      if (nsipm4 == 0 && nsipm5 == 0) continue;
-#endif
+      /** selection on timing scintillators **/
+      if ( apply_timing_selection_OR  && (TIMING1_n == 0 && TIMING2_n == 0) ) continue;
+      if ( apply_timing_selection_AND && (TIMING1_n == 0 || TIMING2_n == 0) ) continue;
+
+      /** selection on tracking matrices **/
+      if ( apply_tracking_selection_OR  && (TRACKING1_n == 0 && TRACKING2_n == 0) ) continue;
+      if ( apply_tracking_selection_AND && (TRACKING1_n == 0 || TRACKING2_n == 0) ) continue;
 
       /** fill trigger0 hits **/
-      auto trigger0 = aframe[192].triggers;
+      auto trigger0 = aframe[TRIGGER0_device].triggers;
       for (auto &trigger : trigger0)
 	io->add_trigger0(trigger.coarse_time_clock() - iframe * frame_size);
 
+#if 0
       /** fill timing hits **/
       for (auto &chip : aframe[207].hits) {
 	auto ichip = chip.first;
@@ -143,12 +166,12 @@ lightwriter(std::vector<std::string> filenames, std::string outfilename, std::st
 	    auto coarse = hit.coarse_time_clock() - iframe * frame_size;
 	    io->add_timing(207, hit.device_index(), coarse, hit.fine, hit.tdc);
 	  }}}
+#endif
 		
-      /** fill cherenkov hits **/
+      /** fill hits **/
       for (auto &device : aframe) {
 	auto idevice = device.first;
 	auto adevice = device.second;
-	if (idevice == 207) continue;
 	for (auto &chip : adevice.hits) {
 	  auto ichip = chip.first;
 	  auto achip = chip.second;
@@ -157,7 +180,11 @@ lightwriter(std::vector<std::string> filenames, std::string outfilename, std::st
 	    auto hits = channel.second;
 	    for (auto &hit : hits) {
 	      auto coarse = hit.coarse_time_clock() - iframe * frame_size;
-	      io->add_cherenkov(idevice, hit.device_index(), coarse, hit.fine, hit.tdc);
+	      if ( (idevice == TIMING1_device && ichip == TIMING1_chip) ||
+		   (idevice == TIMING2_device && ichip == TIMING2_chip) ) 
+		io->add_timing(idevice, hit.device_index(), coarse, hit.fine, hit.tdc);
+	      else
+		io->add_cherenkov(idevice, hit.device_index(), coarse, hit.fine, hit.tdc);
 	    }}}
 	
       } /** end of loop over devices and hits **/
