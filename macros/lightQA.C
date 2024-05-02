@@ -113,7 +113,7 @@ void lightQA(std::string input_file = "lightdata.root", std::string output_file 
 
       // === Trigger
       auto trigger0_vector = io->get_trigger0_vector();
-      hTriggerChannelInFrame->Fill(trigger0_vector.size(), current_spill);
+      hTriggerChannelInFrameIntegrated->Fill(trigger0_vector.size(), current_spill);
       auto trigger_coarse = 0.;
       if (trigger0_vector.size() != 0)
       {
@@ -155,7 +155,7 @@ void lightQA(std::string input_file = "lightdata.root", std::string output_file 
       if (contributors_second_chip != 0 && contributors_first_chip != 0) // otherwise we risk division by zero
         hTimingTimeResolution->Fill((time_first_chip / contributors_first_chip) - (time_second_chip / contributors_second_chip));
 
-      hTimingChannelInFrame->Fill(timing_first_channels_times.size() + timing_second_channels_times.size(), current_spill);
+      hTimingChannelInFrameIntegrated->Fill(timing_first_channels_times.size() + timing_second_channels_times.size(), current_spill);
       hTimingChannelMap->Fill(contributors_first_chip, contributors_second_chip);
 
       // === Cherenkov
@@ -173,7 +173,7 @@ void lightQA(std::string input_file = "lightdata.root", std::string output_file 
           hGenericCoincidenceMapwTrigger[{cherenkov_device, cherenkov_chip}]->Fill(cherenkov_coarse - trigger_coarse);
         hCherenkovHitsTimeInSpill->Fill((cherenkov_coarse + 256 * (frame_id)) * sipm4eic::data::coarse_to_ns * 1.e-9);
       }
-      hCherenkovChannelInFrame->Fill(cherenkov_channels_times.size(), current_spill);
+      hCherenkovChannelInFrameIntegrated->Fill(cherenkov_channels_times.size(), current_spill);
     }
   }
 
@@ -191,8 +191,8 @@ void lightQA(std::string input_file = "lightdata.root", std::string output_file 
 
   current_canvas = get_std_canvas();
   gPad->SetLogy();
-  hTriggerChannelInFrame->Draw();
-  current_canvas->SaveAs(Form("%s/hTriggerChannelInFrame.png", save_dir.c_str()));
+  hTriggerChannelInFrameIntegrated->Draw();
+  current_canvas->SaveAs(Form("%s/hTriggerChannelInFrameIntegrated.png", save_dir.c_str()));
 
   //  === === Timing
   current_canvas = get_std_canvas();
@@ -202,8 +202,8 @@ void lightQA(std::string input_file = "lightdata.root", std::string output_file 
 
   current_canvas = get_std_canvas();
   gPad->SetLogy();
-  hTimingChannelInFrame->Draw();
-  current_canvas->SaveAs(Form("%s/hTimingChannelInFrame.png", save_dir.c_str()));
+  hTimingChannelInFrameIntegrated->Draw();
+  current_canvas->SaveAs(Form("%s/hTimingChannelInFrameIntegrated.png", save_dir.c_str()));
 
   current_canvas = get_std_canvas();
   gPad->SetLogz();
@@ -223,8 +223,8 @@ void lightQA(std::string input_file = "lightdata.root", std::string output_file 
 
   current_canvas = get_std_canvas();
   gPad->SetLogy();
-  hCherenkovChannelInFrame->Draw();
-  current_canvas->SaveAs(Form("%s/hCherenkovChannelInFrame.png", save_dir.c_str()));
+  hCherenkovChannelInFrameIntegrated->Draw();
+  current_canvas->SaveAs(Form("%s/hCherenkovChannelInFrameIntegrated.png", save_dir.c_str()));
 
   for (auto [iCoordinate, object] : hGenericCoincidenceMapwTrigger)
   {
@@ -238,7 +238,7 @@ void lightQA(std::string input_file = "lightdata.root", std::string output_file 
 
   TFile *out = new TFile(output_file.c_str(), "RECREATE");
   hTriggerHitsTimeInSpill->Write();
-  hTriggerChannelInFrame->Write();
+  hTriggerChannelInFrameIntegrated->Write();
   hTimingHitsTimeInSpill->Write();
   hCherenkovHitsTimeInSpill->Write();
   for (auto [iCoordinate, object] : hGenericCoincidenceMapwTrigger)
