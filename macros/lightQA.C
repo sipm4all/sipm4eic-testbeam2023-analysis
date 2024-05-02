@@ -173,7 +173,6 @@ void lightQA(std::string input_file = "lightdata.root", std::string output_file 
   //  === Graphics
   gROOT->SetBatch();
   system(Form("mkdir -p %s/", save_dir.c_str()));
-  system(Form("mkdir -p %s/single_chip/", save_dir.c_str()));
 
   gStyle->SetPalette(kInvertedDarkBodyRadiator);
 
@@ -227,7 +226,7 @@ void lightQA(std::string input_file = "lightdata.root", std::string output_file 
     current_canvas = get_std_canvas();
     gPad->SetLogy();
     object->Draw();
-    current_canvas->SaveAs(Form("%s/single_chip/%s.png", save_dir.c_str(), object->GetName()));
+    current_canvas->SaveAs(Form("%s/%s.png", save_dir.c_str(), object->GetName()));
   }
 
   TFile *out = new TFile(output_file.c_str(), "RECREATE");
