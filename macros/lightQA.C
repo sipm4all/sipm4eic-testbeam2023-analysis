@@ -102,7 +102,7 @@ void lightQA(std::string input_file = "lightdata.root", std::string output_file 
   //  Loop on spills
   auto full_frames = 0;
   auto current_spill = 0;
-  while (io->next_spill() && (current_spill < 3))
+  while (io->next_spill())
   {
     current_spill++;
     cout << "[INFO] Start spill: " << current_spill << endl;
