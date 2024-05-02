@@ -20,7 +20,7 @@ int TRACKING2_device = 201, TRACKING2_chip = 4;
 const float min_ntiming = 32; // [s]
 
 const float min_tspill = -0.1; // [s]
-const float max_tspill = 0.6;  // [s]
+const float max_tspill = 0.9;  // [s]
 const int max_nspill = 100;
 
 const float min_tdelta = -25; // [clock]
@@ -69,22 +69,22 @@ void lightQA(std::string input_file = "lightdata.root", std::string output_file 
 {
   //  Define output objects
   //  === Trigger
-  auto hTriggerHitsTimeInSpill = new TH1F("hTriggerHitsTimeInSpill", "TRIGGER readout;trigger time (s);entries", 1000 * (max_tspill - min_tspill), min_tspill, max_tspill);
-  auto hTriggerChannelInFrameIntegrated = new TH1F("hTriggerChannelInFrame", "TRIGGER readout occupancy;number of triggers;frame", 10, 0, 10);
+  auto hTriggerHitsTimeInSpill = new TH1F("hTriggerHitsTimeInSpill", "TRIGGER readout;time (s);entries", 1000 * (max_tspill - min_tspill), min_tspill, max_tspill);
+  auto hTriggerChannelInFrameIntegrated = new TH1F("hTriggerChannelInFrame", "TRIGGER readout;number of triggers;frame", 10, 0, 10);
 
   //  === Tracking
-  auto hTrackingHitsTimeInSpill = new TH1F("hTrackingHitsTimeInSpill", "TRACKING readout;trigger time (s);entries", 1000 * (max_tspill - min_tspill), min_tspill, max_tspill);
-  auto hTrackingChannelInFrameIntegrated = new TH1F("hTrackingChannelInFrame", "TRACKING readout occupancy;number of triggers;frame", 10, 0, 10);
+  auto hTrackingHitsTimeInSpill = new TH1F("hTrackingHitsTimeInSpill", "TRACKING readout;time (s);entries", 1000 * (max_tspill - min_tspill), min_tspill, max_tspill);
+  auto hTrackingChannelInFrameIntegrated = new TH1F("hTrackingChannelInFrame", "TRACKING readout;number of channels;frame", 10, 0, 10);
 
   //  === Timing
-  auto hTimingHitsTimeInSpill = new TH1F("hTimingHitsTimeInSpill", "TIMING readout;timing time (s);entries", 1000 * (max_tspill - min_tspill), min_tspill, max_tspill);
-  auto hTimingChannelInFrameIntegrated = new TH1F("hTimingChannelInFrame", "TIMING readout occupancy;number of channels;frame", 80, 0, 80);
-  auto hTimingChannelMap = new TH2F("hTimingChannelMap", "TIMING readout occupancy;number of channels (TIMING 1);number of channels (TIMING 2)", 40, 0, 40, 40, 0, 40);
-  auto hTimingTimeResolution = new TH1F("hTimingTimeResolution", "TIMING time coincidences;TIMING 1 - TIMING 2 (clock cycles);", max_tdelta - min_tdelta, min_tdelta, max_tdelta);
+  auto hTimingHitsTimeInSpill = new TH1F("hTimingHitsTimeInSpill", "TIMING readout;time (s);entries", 1000 * (max_tspill - min_tspill), min_tspill, max_tspill);
+  auto hTimingChannelInFrameIntegrated = new TH1F("hTimingChannelInFrame", "TIMING readout;number of channels;frame", 80, 0, 80);
+  auto hTimingChannelMap = new TH2F("hTimingChannelMap", "TIMING readout;number of channels (TIMING 1);number of channels (TIMING 2)", 40, 0, 40, 40, 0, 40);
+  auto hTimingTimeResolution = new TH1F("hTimingTimeResolution", "TIMING readout;TIMING 1 - TIMING 2 (clock cycles);", max_tdelta - min_tdelta, min_tdelta, max_tdelta);
 
   //  === Cherenkov
-  auto hCherenkovHitsTimeInSpill = new TH1F("hCherenkovHitsTimeInSpill", "CHERENKOV readout;cherenkov time (s);entries", 1000 * (max_tspill - min_tspill), min_tspill, max_tspill);
-  auto hCherenkovChannelInFrameIntegrated = new TH1F("hCherenkovChannelInFrame", "CHERENKOV readout occupancy;number of channels;frame", 200, 0, 200);
+  auto hCherenkovHitsTimeInSpill = new TH1F("hCherenkovHitsTimeInSpill", "CHERENKOV readout;time (s);entries", 1000 * (max_tspill - min_tspill), min_tspill, max_tspill);
+  auto hCherenkovChannelInFrameIntegrated = new TH1F("hCherenkovChannelInFrame", "CHERENKOV readout;number of channels;frame", 200, 0, 200);
 
   //  === General
   std::map<std::array<int, 2>, TH1F *> hGenericCoincidenceMapwTrigger;
@@ -153,7 +153,7 @@ void lightQA(std::string input_file = "lightdata.root", std::string output_file 
           timing_first_channels_times[timing_channel].push_back(timing_time);
         else if (timing.device == TIMING2_device && timing.chip() == TIMING2_chip)
           timing_second_channels_times[timing_channel].push_back(timing_time);
-        hTimingHitsTimeInSpill->Fill(timing_time + 256 * (frame_id)*sipm4eic::data::coarse_to_ns * 1.e-9);
+        hTimingHitsTimeInSpill->Fill( (timing_time + 256 * frame_id) * sipm4eic::data::coarse_to_ns * 1.e-9);
       }
       for (auto [timing_channel, timing_time] : timing_first_channels_times)
       {
