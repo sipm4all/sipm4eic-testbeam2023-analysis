@@ -243,7 +243,7 @@ void lightQA(std::string input_file = "lightdata.root", std::string output_file 
 
   //  === === Trigger
   auto current_canvas = get_std_canvas();
-  gPad->SetLogy();
+  //  gPad->SetLogy();
   hTriggerHitsTimeInSpill->Draw();
   current_canvas->SaveAs(Form("%s/hTriggerHitsTimeInSpill.png", save_dir.c_str()));
 
@@ -254,7 +254,7 @@ void lightQA(std::string input_file = "lightdata.root", std::string output_file 
 
   //  === === Tracking
   current_canvas = get_std_canvas();
-  gPad->SetLogy();
+  //  gPad->SetLogy();
   hTrackingHitsTimeInSpill->Draw();
   current_canvas->SaveAs(Form("%s/hTrackingHitsTimeInSpill.png", save_dir.c_str()));
 
@@ -265,7 +265,7 @@ void lightQA(std::string input_file = "lightdata.root", std::string output_file 
 
   //  === === Timing
   current_canvas = get_std_canvas();
-  gPad->SetLogy();
+  //  gPad->SetLogy();
   hTimingHitsTimeInSpill->Draw();
   current_canvas->SaveAs(Form("%s/hTimingHitsTimeInSpill.png", save_dir.c_str()));
 
@@ -286,7 +286,7 @@ void lightQA(std::string input_file = "lightdata.root", std::string output_file 
 
   //  === === Cherenkov
   current_canvas = get_std_canvas();
-  gPad->SetLogy();
+  //  gPad->SetLogy();
   hCherenkovHitsTimeInSpill->Draw();
   current_canvas->SaveAs(Form("%s/hCherenkovHitsTimeInSpill.png", save_dir.c_str()));
 
