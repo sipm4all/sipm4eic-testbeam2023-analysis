@@ -68,17 +68,21 @@ void lightQA(std::string input_file = "lightdata.root", std::string output_file 
   //  Define output objects
   //  === Trigger
   auto hTriggerHitsTimeInSpill = new TH1F("hTriggerHitsTimeInSpill", "TRIGGER readout;trigger time (s);entries", 1000 * (max_tspill - min_tspill), min_tspill, max_tspill);
-  auto hTriggerChannelInFrame = new TH1F("hTriggerChannelInFrame", "TRIGGER readout occupancy;number of triggers;frame", 10, 0, 10);
+  auto hTriggerChannelInFrameIntegrated = new TH1F("hTriggerChannelInFrame", "TRIGGER readout occupancy;number of triggers;frame", 10, 0, 10);
+
+  //  === Tracking
+  auto hTrackingHitsTimeInSpill = new TH1F("hTrackingHitsTimeInSpill", "TRACKING readout;trigger time (s);entries", 1000 * (max_tspill - min_tspill), min_tspill, max_tspill);
+  auto hTrackingChannelInFrameIntegrated = new TH1F("hTrackingChannelInFrame", "TRACKING readout occupancy;number of triggers;frame", 10, 0, 10);
 
   //  === Timing
   auto hTimingHitsTimeInSpill = new TH1F("hTimingHitsTimeInSpill", "TIMING readout;timing time (s);entries", 1000 * (max_tspill - min_tspill), min_tspill, max_tspill);
-  auto hTimingChannelInFrame = new TH1F("hTimingChannelInFrame", "TIMING readout occupancy;number of channels;frame", 80, 0, 80);
+  auto hTimingChannelInFrameIntegrated = new TH1F("hTimingChannelInFrame", "TIMING readout occupancy;number of channels;frame", 80, 0, 80);
   auto hTimingChannelMap = new TH2F("hTimingChannelMap", "TIMING readout occupancy;number of channels (TIMING 1);number of channels (TIMING 2)", 40, 0, 40, 40, 0, 40);
   auto hTimingTimeResolution = new TH1F("hTimingTimeResolution", "TIMING time coincidences;TIMING 1 - TIMING 2 (clock cycles);", max_tdelta - min_tdelta, min_tdelta, max_tdelta);
 
   //  === Cherenkov
   auto hCherenkovHitsTimeInSpill = new TH1F("hCherenkovHitsTimeInSpill", "CHERENKOV readout;cherenkov time (s);entries", 1000 * (max_tspill - min_tspill), min_tspill, max_tspill);
-  auto hCherenkovChannelInFrame = new TH1F("hCherenkovChannelInFrame", "CHERENKOV readout occupancy;number of channels;frame", 200, 0, 200);
+  auto hCherenkovChannelInFrameIntegrated = new TH1F("hCherenkovChannelInFrame", "CHERENKOV readout occupancy;number of channels;frame", 200, 0, 200);
 
   //  === General
   std::map<std::array<int, 2>, TH1F *> hGenericCoincidenceMapwTrigger;
@@ -98,7 +102,7 @@ void lightQA(std::string input_file = "lightdata.root", std::string output_file 
   //  Loop on spills
   auto full_frames = 0;
   auto current_spill = 0;
-  while (io->next_spill())
+  while (io->next_spill() && (current_spill < 3))
   {
     current_spill++;
     cout << "[INFO] Start spill: " << current_spill << endl;
@@ -120,6 +124,20 @@ void lightQA(std::string input_file = "lightdata.root", std::string output_file 
         trigger_coarse = trigger0_vector[0].coarse;
         hTriggerHitsTimeInSpill->Fill((trigger_coarse + 256 * (frame_id)) * sipm4eic::data::coarse_to_ns * 1.e-9);
       }
+
+      // === Tracking
+      auto tracking_vector = io->get_tracking_vector();
+      std::map<int, std::vector<float>> tracking_channels_times;
+      for (auto &tracking : tracking_vector)
+      {
+        auto tracking_coarse = tracking.coarse;
+        auto tracking_device = devices_enum[tracking.device];
+        auto tracking_chip = tracking.chip();
+        auto tracking_channel = tracking.eoch();
+        tracking_channels_times[tracking_channel].push_back(tracking_coarse);
+        hTrackingHitsTimeInSpill->Fill((trigger_coarse + 256 * (frame_id)) * sipm4eic::data::coarse_to_ns * 1.e-9);
+      }
+      hTrackingChannelInFrameIntegrated->Fill(tracking_channels_times.size());
 
       // === Timing
       auto timing_vector = io->get_timing_vector();
@@ -161,7 +179,6 @@ void lightQA(std::string input_file = "lightdata.root", std::string output_file 
       // === Cherenkov
       auto cherenkov_vector = io->get_cherenkov_vector();
       std::map<int, std::vector<float>> cherenkov_channels_times;
-      auto average_cherenkov_time = 0.;
       for (auto &cherenkov : cherenkov_vector)
       {
         auto cherenkov_coarse = cherenkov.coarse;
@@ -193,6 +210,17 @@ void lightQA(std::string input_file = "lightdata.root", std::string output_file 
   gPad->SetLogy();
   hTriggerChannelInFrameIntegrated->Draw();
   current_canvas->SaveAs(Form("%s/hTriggerChannelInFrameIntegrated.png", save_dir.c_str()));
+
+  //  === === Tracking
+  current_canvas = get_std_canvas();
+  gPad->SetLogy();
+  hTrackingHitsTimeInSpill->Draw();
+  current_canvas->SaveAs(Form("%s/hTrackingHitsTimeInSpill.png", save_dir.c_str()));
+
+  current_canvas = get_std_canvas();
+  gPad->SetLogy();
+  hTrackingChannelInFrameIntegrated->Draw();
+  current_canvas->SaveAs(Form("%s/hTrackingChannelInFrameIntegrated.png", save_dir.c_str()));
 
   //  === === Timing
   current_canvas = get_std_canvas();
