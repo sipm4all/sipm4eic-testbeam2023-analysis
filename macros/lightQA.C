@@ -20,7 +20,7 @@ int TRACKING2_device = 201, TRACKING2_chip = 4;
 const float min_ntiming = 32; // [s]
 
 const float min_tspill = -0.1; // [s]
-const float max_tspill = 0.9;  // [s]
+const float max_tspill = 0.7;  // [s]
 const int max_nspill = 100;
 
 const float min_tdelta = -25; // [clock]
@@ -70,21 +70,21 @@ void lightQA(std::string input_file = "lightdata.root", std::string output_file 
   //  Define output objects
   //  === Trigger
   auto hTriggerHitsTimeInSpill = new TH1F("hTriggerHitsTimeInSpill", "TRIGGER readout;time (s);entries", 1000 * (max_tspill - min_tspill), min_tspill, max_tspill);
-  auto hTriggerChannelInFrameIntegrated = new TH1F("hTriggerChannelInFrame", "TRIGGER readout;number of triggers;frame", 10, 0, 10);
+  auto hTriggerChannelInFrameIntegrated = new TH1F("hTriggerChannelInFrame", "TRIGGER readout;number of triggers;number of frames", 10, 0, 10);
 
   //  === Tracking
   auto hTrackingHitsTimeInSpill = new TH1F("hTrackingHitsTimeInSpill", "TRACKING readout;time (s);entries", 1000 * (max_tspill - min_tspill), min_tspill, max_tspill);
-  auto hTrackingChannelInFrameIntegrated = new TH1F("hTrackingChannelInFrame", "TRACKING readout;number of channels;frame", 10, 0, 10);
+  auto hTrackingChannelInFrameIntegrated = new TH1F("hTrackingChannelInFrame", "TRACKING readout;number of channels;number of frames", 10, 0, 10);
 
   //  === Timing
   auto hTimingHitsTimeInSpill = new TH1F("hTimingHitsTimeInSpill", "TIMING readout;time (s);entries", 1000 * (max_tspill - min_tspill), min_tspill, max_tspill);
-  auto hTimingChannelInFrameIntegrated = new TH1F("hTimingChannelInFrame", "TIMING readout;number of channels;frame", 80, 0, 80);
+  auto hTimingChannelInFrameIntegrated = new TH1F("hTimingChannelInFrame", "TIMING readout;number of channels;number of frames", 80, 0, 80);
   auto hTimingChannelMap = new TH2F("hTimingChannelMap", "TIMING readout;number of channels (TIMING 1);number of channels (TIMING 2)", 40, 0, 40, 40, 0, 40);
   auto hTimingTimeResolution = new TH1F("hTimingTimeResolution", "TIMING readout;TIMING 1 - TIMING 2 (clock cycles);", max_tdelta - min_tdelta, min_tdelta, max_tdelta);
 
   //  === Cherenkov
   auto hCherenkovHitsTimeInSpill = new TH1F("hCherenkovHitsTimeInSpill", "CHERENKOV readout;time (s);entries", 1000 * (max_tspill - min_tspill), min_tspill, max_tspill);
-  auto hCherenkovChannelInFrameIntegrated = new TH1F("hCherenkovChannelInFrame", "CHERENKOV readout;number of channels;frame", 200, 0, 200);
+  auto hCherenkovChannelInFrameIntegrated = new TH1F("hCherenkovChannelInFrame", "CHERENKOV readout;number of channels;number of frames", 200, 0, 200);
 
   //  === General
   std::map<std::array<int, 2>, TH1F *> hGenericCoincidenceMapwTrigger;
@@ -229,7 +229,7 @@ void lightQA(std::string input_file = "lightdata.root", std::string output_file 
           hGenericCoincidenceMapwTiming[{cherenkov_device, cherenkov_chip}]->Fill(cherenkov_time - reference_timing);
         if (trigger_available)
           hGenericCoincidenceMapwTrigger[{cherenkov_device, cherenkov_chip}]->Fill(cherenkov_time - reference_trigger);
-        hCherenkovHitsTimeInSpill->Fill(cherenkov_coarse + 256 * (frame_id)*sipm4eic::data::coarse_to_ns * 1.e-9);
+        hCherenkovHitsTimeInSpill->Fill( (cherenkov_coarse + 256 * frame_id) * sipm4eic::data::coarse_to_ns * 1.e-9);
       }
       hCherenkovChannelInFrameIntegrated->Fill(cherenkov_channels_times.size());
     }
