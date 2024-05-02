@@ -132,7 +132,7 @@ void lightQA(std::string input_file = "lightdata.root", std::string output_file 
       if (trigger_available)
       {
         reference_trigger = trigger0_vector[0].time();
-        hTriggerHitsTimeInSpill->Fill(reference_trigger + 256 * (frame_id)*sipm4eic::data::coarse_to_ns * 1.e-9);
+        hTriggerHitsTimeInSpill->Fill( (reference_trigger + 256 * frame_id) * sipm4eic::data::coarse_to_ns * 1.e-9);
       }
 
       // === Timing reference definition
