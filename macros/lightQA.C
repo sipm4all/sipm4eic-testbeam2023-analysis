@@ -17,6 +17,8 @@ int TIMING2_device = 201, TIMING2_chip = 5;
 int TRACKING1_device = 200, TRACKING1_chip = 4;
 int TRACKING2_device = 201, TRACKING2_chip = 4;
 
+const float min_ntiming = 32; // [s]
+
 const float min_tspill = -0.1; // [s]
 const float max_tspill = 0.6;  // [s]
 const int max_nspill = 100;
@@ -86,11 +88,13 @@ void lightQA(std::string input_file = "lightdata.root", std::string output_file 
 
   //  === General
   std::map<std::array<int, 2>, TH1F *> hGenericCoincidenceMapwTrigger;
+  std::map<std::array<int, 2>, TH1F *> hGenericCoincidenceMapwTiming;
   for (auto [device_id, enumerator] : devices_enum)
   {
     for (auto iChip = 0; iChip < 6; iChip++)
     {
-      hGenericCoincidenceMapwTrigger[{enumerator, iChip}] = new TH1F(Form("hGenericCoincidenceMap_d%i_c%i", device_id, iChip), Form("Time coincidences (kc705-%i, chip-%i);hit - trigger time (clock cycles);entries", device_id, iChip), 256 * 2, -256, 256);
+      hGenericCoincidenceMapwTrigger[{enumerator, iChip}] = new TH1F(Form("hGenericCoincidenceMapTrigger_d%i_c%i", device_id, iChip), Form("Time coincidences (kc705-%i, chip-%i);hit - trigger time (clock cycles);entries", device_id, iChip), 256 * 2, -256, 256);
+      hGenericCoincidenceMapwTiming[{enumerator, iChip}] = new TH1F(Form("hGenericCoincidenceMapTiming_d%i_c%i", device_id, iChip), Form("Time coincidences (kc705-%i, chip-%i);hit - timing time (clock cycles);entries", device_id, iChip), 256 * 2, -256, 256);
     }
   }
 
@@ -114,32 +118,24 @@ void lightQA(std::string input_file = "lightdata.root", std::string output_file 
       //  === Frame info
       current_frame++;
       auto frame_id = io->frame[current_frame];
+      //  === === Trigger
+      bool trigger_available = true;
+      auto reference_trigger = 0.;
+      //  === === Timing
+      bool timing_available = true;
+      auto reference_timing = 0.;
 
-      // === Trigger
+      // === Trigger reference definiton
       auto trigger0_vector = io->get_trigger0_vector();
-      hTriggerChannelInFrameIntegrated->Fill(trigger0_vector.size(), current_spill);
-      auto trigger_coarse = 0.;
-      if (trigger0_vector.size() != 0)
+      trigger_available = trigger0_vector.size() > 0;
+      hTriggerChannelInFrameIntegrated->Fill(trigger0_vector.size());
+      if (trigger_available)
       {
-        trigger_coarse = trigger0_vector[0].coarse;
-        hTriggerHitsTimeInSpill->Fill((trigger_coarse + 256 * (frame_id)) * sipm4eic::data::coarse_to_ns * 1.e-9);
+        reference_trigger = trigger0_vector[0].time();
+        hTriggerHitsTimeInSpill->Fill(reference_trigger + 256 * (frame_id)*sipm4eic::data::coarse_to_ns * 1.e-9);
       }
 
-      // === Tracking
-      auto tracking_vector = io->get_tracking_vector();
-      std::map<int, std::vector<float>> tracking_channels_times;
-      for (auto &tracking : tracking_vector)
-      {
-        auto tracking_coarse = tracking.coarse;
-        auto tracking_device = devices_enum[tracking.device];
-        auto tracking_chip = tracking.chip();
-        auto tracking_channel = tracking.eoch();
-        tracking_channels_times[tracking_channel].push_back(tracking_coarse);
-        hTrackingHitsTimeInSpill->Fill((trigger_coarse + 256 * (frame_id)) * sipm4eic::data::coarse_to_ns * 1.e-9);
-      }
-      hTrackingChannelInFrameIntegrated->Fill(tracking_channels_times.size());
-
-      // === Timing
+      // === Timing reference definition
       auto timing_vector = io->get_timing_vector();
       std::map<int, std::vector<float>> timing_first_channels_times, timing_second_channels_times;
       auto contributors_first_chip = 0;
@@ -149,16 +145,15 @@ void lightQA(std::string input_file = "lightdata.root", std::string output_file 
       for (auto &timing : timing_vector)
       {
         auto timing_coarse = timing.coarse;
+        auto timing_time = timing.time();
         auto timing_device = devices_enum[timing.device];
         auto timing_chip = timing.chip();
         auto timing_channel = timing.eoch();
-        if (trigger0_vector.size() != 0)
-          hGenericCoincidenceMapwTrigger[{timing_device, timing_chip}]->Fill(timing_coarse - trigger_coarse);
-        hTimingHitsTimeInSpill->Fill((timing_coarse + 256 * (frame_id)) * sipm4eic::data::coarse_to_ns * 1.e-9);
         if (timing.device == TIMING1_device && timing.chip() == TIMING1_chip)
-          timing_first_channels_times[timing_channel].push_back(timing_coarse);
+          timing_first_channels_times[timing_channel].push_back(timing_time);
         else if (timing.device == TIMING2_device && timing.chip() == TIMING2_chip)
-          timing_second_channels_times[timing_channel].push_back(timing_coarse);
+          timing_second_channels_times[timing_channel].push_back(timing_time);
+        hTimingHitsTimeInSpill->Fill(timing_time + 256 * (frame_id)*sipm4eic::data::coarse_to_ns * 1.e-9);
       }
       for (auto [timing_channel, timing_time] : timing_first_channels_times)
       {
@@ -170,11 +165,54 @@ void lightQA(std::string input_file = "lightdata.root", std::string output_file 
         time_second_chip += timing_time[0];
         contributors_second_chip++;
       }
-      if (contributors_second_chip != 0 && contributors_first_chip != 0) // otherwise we risk division by zero
+      if (contributors_second_chip == 0 ||
+          contributors_first_chip == 0 ||
+          contributors_first_chip < min_ntiming ||
+          contributors_second_chip < min_ntiming)
+        timing_available = false;
+      if (timing_available)
+      {
+        reference_timing = 0.5 * (time_first_chip / contributors_first_chip) + 0.5 * (time_second_chip / contributors_second_chip);
         hTimingTimeResolution->Fill((time_first_chip / contributors_first_chip) - (time_second_chip / contributors_second_chip));
-
-      hTimingChannelInFrameIntegrated->Fill(timing_first_channels_times.size() + timing_second_channels_times.size(), current_spill);
+      }
+      hTimingChannelInFrameIntegrated->Fill(timing_first_channels_times.size() + timing_second_channels_times.size());
       hTimingChannelMap->Fill(contributors_first_chip, contributors_second_chip);
+
+      // === Trigger
+      //  ---
+
+      // === Timing
+      for (auto &timing : timing_vector)
+      {
+        auto timing_coarse = timing.coarse;
+        auto timing_time = timing.time();
+        auto timing_device = devices_enum[timing.device];
+        auto timing_chip = timing.chip();
+        auto timing_channel = timing.eoch();
+        if (timing_available)
+          hGenericCoincidenceMapwTiming[{timing_device, timing_chip}]->Fill(timing_time - reference_timing);
+        if (trigger_available)
+          hGenericCoincidenceMapwTrigger[{timing_device, timing_chip}]->Fill(timing_time - reference_trigger);
+      }
+
+      // === Tracking
+      auto tracking_vector = io->get_tracking_vector();
+      std::map<int, std::vector<float>> tracking_channels_times;
+      for (auto &tracking : tracking_vector)
+      {
+        auto tracking_coarse = tracking.coarse;
+        auto tracking_time = tracking.time();
+        auto tracking_device = devices_enum[tracking.device];
+        auto tracking_chip = tracking.chip();
+        auto tracking_channel = tracking.eoch();
+        tracking_channels_times[tracking_channel].push_back(tracking_coarse);
+        if (timing_available)
+          hGenericCoincidenceMapwTiming[{tracking_device, tracking_chip}]->Fill(tracking_time - reference_timing);
+        if (trigger_available)
+          hGenericCoincidenceMapwTrigger[{tracking_device, tracking_chip}]->Fill(tracking_time - reference_trigger);
+        hTrackingHitsTimeInSpill->Fill(tracking_time + 256 * (frame_id)*sipm4eic::data::coarse_to_ns * 1.e-9);
+      }
+      hTrackingChannelInFrameIntegrated->Fill(tracking_channels_times.size());
 
       // === Cherenkov
       auto cherenkov_vector = io->get_cherenkov_vector();
@@ -182,15 +220,18 @@ void lightQA(std::string input_file = "lightdata.root", std::string output_file 
       for (auto &cherenkov : cherenkov_vector)
       {
         auto cherenkov_coarse = cherenkov.coarse;
+        auto cherenkov_time = cherenkov.time();
         auto cherenkov_device = devices_enum[cherenkov.device];
         auto cherenkov_chip = cherenkov.chip();
         auto cherenkov_channel = cherenkov.eoch();
         cherenkov_channels_times[cherenkov_channel].push_back(cherenkov_coarse);
-        if (trigger0_vector.size() != 0)
-          hGenericCoincidenceMapwTrigger[{cherenkov_device, cherenkov_chip}]->Fill(cherenkov_coarse - trigger_coarse);
-        hCherenkovHitsTimeInSpill->Fill((cherenkov_coarse + 256 * (frame_id)) * sipm4eic::data::coarse_to_ns * 1.e-9);
+        if (timing_available)
+          hGenericCoincidenceMapwTiming[{cherenkov_device, cherenkov_chip}]->Fill(cherenkov_time - reference_timing);
+        if (trigger_available)
+          hGenericCoincidenceMapwTrigger[{cherenkov_device, cherenkov_chip}]->Fill(cherenkov_time - reference_trigger);
+        hCherenkovHitsTimeInSpill->Fill(cherenkov_coarse + 256 * (frame_id)*sipm4eic::data::coarse_to_ns * 1.e-9);
       }
-      hCherenkovChannelInFrameIntegrated->Fill(cherenkov_channels_times.size(), current_spill);
+      hCherenkovChannelInFrameIntegrated->Fill(cherenkov_channels_times.size());
     }
   }
 
@@ -255,6 +296,16 @@ void lightQA(std::string input_file = "lightdata.root", std::string output_file 
   current_canvas->SaveAs(Form("%s/hCherenkovChannelInFrameIntegrated.png", save_dir.c_str()));
 
   for (auto [iCoordinate, object] : hGenericCoincidenceMapwTrigger)
+  {
+    auto iDevice = iCoordinate[0];
+    auto iChip = iCoordinate[1];
+    current_canvas = get_std_canvas();
+    gPad->SetLogy();
+    object->Draw();
+    current_canvas->SaveAs(Form("%s/%s.png", save_dir.c_str(), object->GetName()));
+  }
+
+  for (auto [iCoordinate, object] : hGenericCoincidenceMapwTiming)
   {
     auto iDevice = iCoordinate[0];
     auto iChip = iCoordinate[1];
