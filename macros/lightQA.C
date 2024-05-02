@@ -1,11 +1,18 @@
 #include "../lib/lightio.h"
 #include "../lib/data.h"
 
+#define TESTBEAM2023
+
 int TRIGGER0_device = 192;
 int TRIGGER0_offset = 112;
 
+#ifdef TESTBEAM2023
+int TIMING1_device = 207, TIMING1_chip = 4;
+int TIMING2_device = 207, TIMING2_chip = 5;
+#else
 int TIMING1_device = 200, TIMING1_chip = 5;
 int TIMING2_device = 201, TIMING2_chip = 5;
+#endif
 
 int TRACKING1_device = 200, TRACKING1_chip = 4;
 int TRACKING2_device = 201, TRACKING2_chip = 4;

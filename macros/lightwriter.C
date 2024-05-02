@@ -1,9 +1,15 @@
 #include "../lib/framer.h"
 #include "../lib/lightio.h"
 
+#define TESTBEAM2023
+
 const int frame_size = 256;
 
-bool apply_minimal_selection = true;
+#ifdef TESTBEAM2023
+bool apply_minimal_selection = false;
+#else
+bool apply_minimal_selection = false;
+#endif
 bool apply_trigger0_selection = false;
 bool apply_timing_selection_OR = false;
 bool apply_timing_selection_AND = false;
@@ -13,8 +19,13 @@ bool apply_tracking_selection_AND = false;
 int TRIGGER0_device = 192;
 int TRIGGER0_offset = 112;
 
+#ifdef TESTBEAM2023
+int TIMING1_device = 207, TIMING1_chip = 4;
+int TIMING2_device = 207, TIMING2_chip = 5;
+#else
 int TIMING1_device = 200, TIMING1_chip = 5;
 int TIMING2_device = 201, TIMING2_chip = 5;
+#endif
 
 int TRACKING1_device = 200, TRACKING1_chip = 4;
 int TRACKING2_device = 201, TRACKING2_chip = 4;
