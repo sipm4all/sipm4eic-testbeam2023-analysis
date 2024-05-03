@@ -1,5 +1,6 @@
 #include "../lib/lightio.h"
 #include "../lib/data.h"
+#include "../lib/utility.h"
 
 #define TESTBEAM2023
 
@@ -25,45 +26,6 @@ const int max_nspill = 100;
 
 const float min_tdelta = -25; // [clock]
 const float max_tdelta = 25;  // [clock]
-
-TCanvas *get_std_canvas()
-{
-  TCanvas *result = new TCanvas("", "", 800, 800);
-  gStyle->SetOptStat(1110);
-  result->SetRightMargin(0.15);
-  result->SetTopMargin(0.15);
-  result->SetLeftMargin(0.15);
-  result->SetBottomMargin(0.15);
-  return result;
-}
-
-std::map<std::string, int> devices_name = {
-    {"kc705-192", 192},
-    {"kc705-193", 193},
-    {"kc705-194", 194},
-    {"kc705-195", 195},
-    {"kc705-196", 196},
-    {"kc705-197", 197},
-    {"kc705-198", 198},
-    {"kc705-199", 199},
-    {"kc705-200", 200},
-    {"kc705-201", 201},
-    {"kc705-202", 202},
-    {"kc705-207", 207}};
-
-std::map<int, int> devices_enum = {
-    {192, 0},
-    {193, 1},
-    {194, 2},
-    {195, 3},
-    {196, 4},
-    {197, 5},
-    {198, 6},
-    {199, 7},
-    {200, 8},
-    {201, 9},
-    {202, 10},
-    {207, 11}};
 
 void lightQA(std::string input_file = "lightdata.root", std::string output_file = "out.root", std::string save_dir = "./images/")
 {
