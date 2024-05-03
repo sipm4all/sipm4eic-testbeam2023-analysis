@@ -54,6 +54,10 @@ std::map<int, int> devices_enum = {
     {202, 10},
     {207, 11}};
 
+// General Info
+const float kSiPM_x_dimension = 1.5;
+const float kSiPM_y_dimension = 1.5;
+
 //  General utilities
 //  === Cartesian to Polar
 inline std::array<float, 2> cartesian_to_polar(std::array<float, 2> target, std::array<float, 2> center_shift = {0., 0.})
@@ -73,11 +77,77 @@ inline std::array<float, 2> polar_to_cartesian(std::array<float, 2> target, std:
   return {x_coordinate, y_coordinate};
 }
 //  === Filler functions
+bool is_within_SiPM(std::array<float, 2> cartesian_coordinates, std::array<float, 2> SiPM_center)
+{
+  bool is_within_SiPM = false;
+  auto x_distance = fabs(cartesian_coordinates[0] - SiPM_center[0]);
+  auto y_distance = fabs(cartesian_coordinates[1] - SiPM_center[1]);
+  if ((x_distance) <= kSiPM_x_dimension && fabs(y_distance) <= kSiPM_y_dimension)
+    is_within_SiPM = true;
+  return is_within_SiPM;
+}
 template <bool rnd_smearing = true>
 void fill_persistance(TH2F *hTarget, recodata reco_data)
 {
   for (int iPnt = 0; iPnt < reco_data.n; iPnt++)
     hTarget->Fill(rnd_smearing ? gRandom->Uniform(reco_data.x[iPnt] - 1.5, reco_data.x[iPnt] + 1.5) : reco_data.x[iPnt], rnd_smearing ? gRandom->Uniform(reco_data.y[iPnt] - 1.5, reco_data.y[iPnt] + 1.5) : reco_data.y[iPnt]);
+}
+template <bool allow_overlap = false>
+void fill_with_SiPM_coverage(TH2F *target, std::array<float, 2> SiPM_center)
+{
+  float x_center_bin = target->GetXaxis()->FindBin(SiPM_center[0]);
+  float y_center_bin = target->GetYaxis()->FindBin(SiPM_center[1]);
+  float x_center_bin_center = target->GetXaxis()->GetBinCenter(x_center_bin);
+  float y_center_bin_center = target->GetYaxis()->GetBinCenter(y_center_bin);
+  float current_center_bin_content = target->GetBinContent(target->FindBin(x_center_bin, y_center_bin));
+
+  //  Did we set this SiPM already?
+  //  * No overlap is permitted
+  if ((current_center_bin_content > 0) && !allow_overlap)
+    return;
+
+  //  Start with know center bin
+  for (auto xBin = 0; xBin < target->GetNbinsX(); xBin++)
+  {
+    //  Check at least one fill has been done
+    bool at_least_one_fill = false;
+
+    float current_bin_center_x_high = (float)(target->GetXaxis()->GetBinCenter(x_center_bin + xBin));
+    float current_bin_center_x_low_ = (float)(target->GetXaxis()->GetBinCenter(x_center_bin - xBin));
+    for (auto yBin = 0; yBin < target->GetNbinsY(); yBin++)
+    {
+      float current_bin_center_y_high = (float)(target->GetYaxis()->GetBinCenter(y_center_bin + yBin));
+      float current_bin_center_y_low_ = (float)(target->GetYaxis()->GetBinCenter(y_center_bin - yBin));
+
+      //  Set bin contents
+      if (is_within_SiPM({current_bin_center_x_high, current_bin_center_y_high}, SiPM_center))
+      {
+        target->SetBinContent(x_center_bin + xBin, y_center_bin + yBin, 1);
+        at_least_one_fill = true;
+      }
+      if (is_within_SiPM({current_bin_center_x_high, current_bin_center_y_low_}, SiPM_center))
+      {
+        target->SetBinContent(x_center_bin + xBin, y_center_bin - yBin, 1);
+        at_least_one_fill = true;
+      }
+      if (is_within_SiPM({current_bin_center_x_low_, current_bin_center_y_high}, SiPM_center))
+      {
+        target->SetBinContent(x_center_bin - xBin, y_center_bin + yBin, 1);
+        at_least_one_fill = true;
+      }
+      if (is_within_SiPM({current_bin_center_x_low_, current_bin_center_y_low_}, SiPM_center))
+      {
+        target->SetBinContent(x_center_bin - xBin, y_center_bin - yBin, 1);
+        at_least_one_fill = true;
+      }
+
+      //  return if we stopped filling
+      if (!at_least_one_fill)
+        break;
+    }
+    if (!is_within_SiPM({current_bin_center_x_high, y_center_bin_center}, SiPM_center) && !is_within_SiPM({current_bin_center_x_low_, y_center_bin_center}, SiPM_center))
+      return;
+  }
 }
 //  === Graphical helpers
 TCanvas *get_std_canvas()
