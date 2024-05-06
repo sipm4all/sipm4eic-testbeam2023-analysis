@@ -9,6 +9,7 @@ void recoQA(std::string input_file = "recodata.root", std::string output_file = 
     auto hPersistance2D = new TH2F("hPersistance2D", ";X (mm);Y (mm); t (ns)", 396, -99, 99, 396, -99, 99);
     auto hMap_fullsetup_SiPM = new TH2F("hMap_fullsetup_SiPM", ";X (mm);Y (mm)", 4000, -100, 100, 4000, -100, 100);
     auto hMap_availsetup_SiPM = new TH2F("hMap_availsetup_SiPM", ";X (mm);Y (mm)", 4000, -100, 100, 4000, -100, 100);
+    std::vector<TH2F*> hMap_found_Rings;
 
     //  Link TTree to local data instance
     recodata reco_data;
@@ -65,6 +66,7 @@ void recoQA(std::string input_file = "recodata.root", std::string output_file = 
     current_canvas = get_std_canvas();
     hMap_availsetup_SiPM->Draw();
     current_canvas->SaveAs(Form("%s/hMap_availsetup_SiPM.png", save_dir.c_str()));
+    //  === === === Rings coverage
 
     TFile *out = new TFile(output_file.c_str(), "RECREATE");
     hPersistance2D->Write();

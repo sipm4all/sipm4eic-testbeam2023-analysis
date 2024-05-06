@@ -149,6 +149,25 @@ void fill_with_SiPM_coverage(TH2F *target, std::array<float, 2> SiPM_center)
       return;
   }
 }
+void fill_with_ring_coverage(TH2F *target, std::array<float, 3> ring_parameters, float ring_radius_sigma = 0.)
+{
+  for (auto xBin = 0; xBin < target->GetNbinsX(); xBin++)
+  {
+    float current_bin_center_x = (float)(target->GetXaxis()->GetBinCenter(xBin));
+    for (auto yBin = 0; yBin < target->GetNbinsY(); yBin++)
+    {
+      float current_bin_center_y = float(target->GetYaxis()->GetBinCenter(yBin));
+      if (is_within_ring({current_bin_center_x, current_bin_center_y}, ring_parameters, ring_radius_sigma))
+      {
+        target->SetBinContent(xBin, yBin, 1);
+      }
+      else
+      {
+        target->SetBinContent(xBin, yBin, 0);
+      }
+    }
+  }
+}
 //  === Graphical helpers
 TCanvas *get_std_canvas()
 {
