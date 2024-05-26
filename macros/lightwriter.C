@@ -1,34 +1,43 @@
 #include "../lib/framer.h"
 #include "../lib/lightio.h"
 
-#define TESTBEAM2023
+//#define TESTBEAM2023
+#define TESTBEAM2024
+#define TRIGGER_OFFSET
 
 const int frame_size = 256;
 
-#ifdef TESTBEAM2023
-bool apply_minimal_selection = false;
-#else
-bool apply_minimal_selection = false;
-#endif
-bool apply_trigger0_selection = false;
-bool apply_timing_selection_OR = false;
-bool apply_timing_selection_AND = false;
-bool apply_tracking_selection_OR = false;
+bool apply_minimal_selection      = false;
+bool apply_trigger0_selection     = true;
+bool apply_timing_selection_OR    = false;
+bool apply_timing_selection_AND   = false;
+bool apply_tracking_selection_OR  = false;
 bool apply_tracking_selection_AND = false;
 
+#ifdef TESTBEAM2023
 int TRIGGER0_device = 192;
 int TRIGGER0_offset = 112;
+#elifdef TESTBEAM2024
+int TRIGGER0_device = 193;
+int TRIGGER0_offset = 108;
+#else
+int TRIGGER0_device = 192;
+int TRIGGER0_offset = 112;
+#endif
 
 #ifdef TESTBEAM2023
 int TIMING1_device = 207, TIMING1_chip = 4;
 int TIMING2_device = 207, TIMING2_chip = 5;
+#elifdef TESTBEAM2024
+int TIMING1_device = 200, TIMING1_chip = 2;
+int TIMING2_device = 200, TIMING2_chip = 4;
 #else
 int TIMING1_device = 200, TIMING1_chip = 5;
 int TIMING2_device = 201, TIMING2_chip = 5;
 #endif
 
-int TRACKING1_device = 200, TRACKING1_chip = 4;
-int TRACKING2_device = 201, TRACKING2_chip = 4;
+int TRACKING1_device = 200, TRACKING1_chip = 3;
+int TRACKING2_device = 200, TRACKING2_chip = 5;
 
 std::vector<std::string> devices = {
   "kc705-192",
@@ -42,7 +51,7 @@ std::vector<std::string> devices = {
   "kc705-200",
   "kc705-201",
   "kc705-202",
-  "kc705-207"
+  "kc705-203"
 };
 
 void
@@ -70,7 +79,7 @@ lightwriter(std::vector<std::string> filenames, std::string outfilename, std::st
   std::cout << " --- initialize framer: frame size = " << frame_size << std::endl;
   sipm4eic::framer framer(filenames, frame_size);
   framer.verbose(verbose);
-#if TRIGGER_OFFSET
+#ifdef TRIGGER_OFFSET
   framer.set_trigger_coarse_offset(TRIGGER0_device, TRIGGER0_offset);
 #endif
   
