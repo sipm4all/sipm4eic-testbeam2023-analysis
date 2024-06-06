@@ -58,6 +58,9 @@ recowriter(std::string lightdata_infilename,
   /** read calib data **/
   //  sipm4eic::lightdata::load_fine_calibration(finecalib_infilename);
 
+  /** read calib data **/
+  sipm4eic::lightdata::load_fine_calibration(finecalib_infilename);
+
   /** prepare output data **/
   unsigned short n;
   unsigned short ch[65543];
