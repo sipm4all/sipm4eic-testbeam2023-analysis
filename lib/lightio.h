@@ -29,6 +29,18 @@ class lightio {
   unsigned char trigger0_n[max_frames]; // trigger hits in frame
   unsigned char trigger0_coarse[max_triggers];
   //
+  unsigned int trigger1_size;           // trigger hits in spill
+  unsigned char trigger1_n[max_frames]; // trigger hits in frame
+  unsigned char trigger1_coarse[max_triggers];
+  //
+  unsigned int trigger2_size;           // trigger hits in spill
+  unsigned char trigger2_n[max_frames]; // trigger hits in frame
+  unsigned char trigger2_coarse[max_triggers];
+  //
+  unsigned int trigger3_size;           // trigger hits in spill
+  unsigned char trigger3_n[max_frames]; // trigger hits in frame
+  unsigned char trigger3_coarse[max_triggers];
+  //
   unsigned int timing_size;            // timing hits in spill
   unsigned short timing_n[max_frames]; // timing hits in frame
   unsigned char timing_device[max_hits];
@@ -60,6 +72,9 @@ class lightio {
   void add_part(unsigned char device, unsigned int mask);
   void add_dead(unsigned char device, unsigned int mask);
   void add_trigger0(unsigned char coarse);
+  void add_trigger1(unsigned char coarse);
+  void add_trigger2(unsigned char coarse);
+  void add_trigger3(unsigned char coarse);
   void add_timing(unsigned char device, unsigned char index, unsigned char coarse, unsigned char fine, unsigned char tdc);
   void add_tracking(unsigned char device, unsigned char index, unsigned char coarse, unsigned char fine, unsigned char tdc);
   void add_cherenkov(unsigned char device, unsigned char index, unsigned char coarse, unsigned char fine, unsigned char tdc);
@@ -77,6 +92,9 @@ class lightio {
 
   
   std::vector<lightdata> &get_trigger0_vector() { return trigger0_vector; };
+  std::vector<lightdata> &get_trigger1_vector() { return trigger1_vector; };
+  std::vector<lightdata> &get_trigger2_vector() { return trigger2_vector; };
+  std::vector<lightdata> &get_trigger3_vector() { return trigger3_vector; };
   std::vector<lightdata> &get_timing_vector() { return timing_vector; };
   std::vector<lightdata> &get_tracking_vector() { return tracking_vector; };
   std::vector<lightdata> &get_cherenkov_vector() { return cherenkov_vector; };
@@ -100,11 +118,17 @@ class lightio {
   int frame_current = 0;
   
   int trigger0_offset = 0;
+  int trigger1_offset = 0;
+  int trigger2_offset = 0;
+  int trigger3_offset = 0;
   int timing_offset = 0;
   int tracking_offset = 0;
   int cherenkov_offset = 0;
 
   std::vector<lightdata> trigger0_vector;
+  std::vector<lightdata> trigger1_vector;
+  std::vector<lightdata> trigger2_vector;
+  std::vector<lightdata> trigger3_vector;
   std::vector<lightdata> timing_vector;
   std::vector<lightdata> tracking_vector;
   std::vector<lightdata> cherenkov_vector;
@@ -123,6 +147,9 @@ lightio::new_spill(unsigned int ispill)
   dead_n = 0;
   frame_n = 0;
   trigger0_size = 0;
+  trigger1_size = 0;
+  trigger2_size = 0;
+  trigger3_size = 0;
   timing_size = 0;
   tracking_size = 0;
   cherenkov_size = 0;
@@ -132,6 +159,9 @@ void
 lightio::new_frame(unsigned int iframe) {
   frame[frame_n] = iframe;
   trigger0_n[frame_n] = 0;
+  trigger1_n[frame_n] = 0;
+  trigger2_n[frame_n] = 0;
+  trigger3_n[frame_n] = 0;
   timing_n[frame_n] = 0;
   tracking_n[frame_n] = 0;
   cherenkov_n[frame_n] = 0;
@@ -156,6 +186,27 @@ lightio::add_trigger0(unsigned char coarse) {
   trigger0_coarse[trigger0_size] = coarse;
   ++trigger0_n[frame_n];
   ++trigger0_size;
+}
+
+void
+lightio::add_trigger1(unsigned char coarse) {
+  trigger1_coarse[trigger1_size] = coarse;
+  ++trigger1_n[frame_n];
+  ++trigger1_size;
+}
+
+void
+lightio::add_trigger2(unsigned char coarse) {
+  trigger2_coarse[trigger2_size] = coarse;
+  ++trigger2_n[frame_n];
+  ++trigger2_size;
+}
+
+void
+lightio::add_trigger3(unsigned char coarse) {
+  trigger3_coarse[trigger3_size] = coarse;
+  ++trigger3_n[frame_n];
+  ++trigger3_size;
 }
 
 void
@@ -194,6 +245,9 @@ lightio::add_cherenkov(unsigned char device, unsigned char index, unsigned char 
 void
 lightio::fill() {
   std::cout << " --- fill tree: trigger0_size = " << trigger0_size << std::endl;
+  std::cout << "                trigger1_size = " << trigger1_size << std::endl;
+  std::cout << "                trigger2_size = " << trigger2_size << std::endl;
+  std::cout << "                trigger3_size = " << trigger3_size << std::endl;
   std::cout << "                  timing_size = " << timing_size << std::endl;
   std::cout << "                tracking_size = " << tracking_size << std::endl;
   std::cout << "               cherenkov_size = " << cherenkov_size << std::endl;
@@ -243,6 +297,18 @@ lightio::write_to_tree(TTree *t)
   t->Branch("trigger0_size", &trigger0_size, "trigger0_size/i");
   t->Branch("trigger0_n", &trigger0_n, "trigger0_n[frame_n]/b");
   t->Branch("trigger0_coarse", &trigger0_coarse, "trigger0_coarse[trigger0_size]/b");
+
+  t->Branch("trigger1_size", &trigger1_size, "trigger1_size/i");
+  t->Branch("trigger1_n", &trigger1_n, "trigger1_n[frame_n]/b");
+  t->Branch("trigger1_coarse", &trigger1_coarse, "trigger1_coarse[trigger1_size]/b");
+
+  t->Branch("trigger2_size", &trigger2_size, "trigger2_size/i");
+  t->Branch("trigger2_n", &trigger2_n, "trigger2_n[frame_n]/b");
+  t->Branch("trigger2_coarse", &trigger2_coarse, "trigger2_coarse[trigger2_size]/b");
+
+  t->Branch("trigger3_size", &trigger3_size, "trigger3_size/i");
+  t->Branch("trigger3_n", &trigger3_n, "trigger3_n[frame_n]/b");
+  t->Branch("trigger3_coarse", &trigger3_coarse, "trigger3_coarse[trigger3_size]/b");
 
   t->Branch("timing_size", &timing_size, "timing_size/i");
   t->Branch("timing_n", &timing_n, "timing_n[frame_n]/s");
@@ -295,6 +361,18 @@ lightio::read_from_tree(TTree *t)
   t->SetBranchAddress("trigger0_n", &trigger0_n);
   t->SetBranchAddress("trigger0_coarse", &trigger0_coarse);
 
+  t->SetBranchAddress("trigger1_size", &trigger1_size);
+  t->SetBranchAddress("trigger1_n", &trigger1_n);
+  t->SetBranchAddress("trigger1_coarse", &trigger1_coarse);
+
+  t->SetBranchAddress("trigger2_size", &trigger2_size);
+  t->SetBranchAddress("trigger2_n", &trigger2_n);
+  t->SetBranchAddress("trigger2_coarse", &trigger2_coarse);
+
+  t->SetBranchAddress("trigger3_size", &trigger3_size);
+  t->SetBranchAddress("trigger3_n", &trigger3_n);
+  t->SetBranchAddress("trigger3_coarse", &trigger3_coarse);
+
   t->SetBranchAddress("timing_size", &timing_size);
   t->SetBranchAddress("timing_n", &timing_n);
   t->SetBranchAddress("timing_device", &timing_device);
@@ -329,6 +407,9 @@ lightio::next_spill()
   tree->GetEntry(spill_current);
   frame_current = 0;
   trigger0_offset = 0;
+  trigger1_offset = 0;
+  trigger2_offset = 0;
+  trigger3_offset = 0;
   timing_offset = 0;
   tracking_offset = 0;
   cherenkov_offset = 0;
@@ -350,6 +431,30 @@ lightio::next_frame()
     trigger0_vector.push_back(lightdata(0, 0, trigger0_coarse[ii], 0, 0));
   }
   trigger0_offset += trigger0_n[frame_current];
+  
+  // fill trigger1 vector
+  trigger1_vector.clear();
+  for (int i = 0; i < trigger1_n[frame_current]; ++i) {
+    auto ii = trigger1_offset + i;
+    trigger1_vector.push_back(lightdata(0, 0, trigger1_coarse[ii], 0, 0));
+  }
+  trigger1_offset += trigger1_n[frame_current];
+  
+  // fill trigger2 vector
+  trigger2_vector.clear();
+  for (int i = 0; i < trigger2_n[frame_current]; ++i) {
+    auto ii = trigger2_offset + i;
+    trigger2_vector.push_back(lightdata(0, 0, trigger2_coarse[ii], 0, 0));
+  }
+  trigger2_offset += trigger2_n[frame_current];
+  
+  // fill trigger3 vector
+  trigger3_vector.clear();
+  for (int i = 0; i < trigger3_n[frame_current]; ++i) {
+    auto ii = trigger3_offset + i;
+    trigger3_vector.push_back(lightdata(0, 0, trigger3_coarse[ii], 0, 0));
+  }
+  trigger3_offset += trigger3_n[frame_current];
   
   // fill timing vector and map
   timing_vector.clear();

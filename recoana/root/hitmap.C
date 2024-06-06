@@ -15,6 +15,7 @@ hitmap(std::string recodata_infilename)
   tin->SetBranchAddress("t", &t);
 
   auto hXY = new TH2F("hMap", ";x (mm);y (mm)", 396, -99, 99, 396, -99, 99);
+  hXY->SetStats(false);
   auto hT = new TH1F("hT", ";t (ns);", 50, -78.125, 78.125);  
 
   for (int iev = 0; iev < nev; ++iev) {
@@ -25,11 +26,9 @@ hitmap(std::string recodata_infilename)
     } 
   }
 
-  auto c = new TCanvas("c", "c", 1600, 800);
-  c->Divide(2, 1);
-  c->cd(1)->SetLogz();
-  hXY->Draw("col");
-  c->cd(2)->SetLogy();
-  hT->Draw();
-  
+  auto cXY = new TCanvas("cXY", "cXY", 800, 800);
+  cXY->SetMargin(0.15, 0.15, 0.15, 0.15);
+  cXY->SetLogz();
+  hXY->Draw("colz");
+  cXY->SaveAs("hitmap.png");
 }

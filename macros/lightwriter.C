@@ -1,23 +1,64 @@
 #include "../lib/framer.h"
 #include "../lib/lightio.h"
 
+//#define TESTBEAM2023
+#define TESTBEAM2024
+#define TRIGGER_OFFSET
+
 const int frame_size = 256;
 
-bool apply_minimal_selection = true;
-bool apply_trigger0_selection = false;
-bool apply_timing_selection_OR = false;
-bool apply_timing_selection_AND = false;
-bool apply_tracking_selection_OR = false;
+bool apply_minimal_selection      = false;
+bool apply_trigger0_selection     = true;
+bool apply_trigger1_selection     = false;
+bool apply_trigger2_selection     = false;
+bool apply_trigger3_selection     = false;
+bool apply_timing_selection_OR    = false;
+bool apply_timing_selection_AND   = false;
+bool apply_tracking_selection_OR  = false;
 bool apply_tracking_selection_AND = false;
 
+#ifdef TESTBEAM2023
 int TRIGGER0_device = 192;
+int TRIGGER1_device = 0;
+int TRIGGER2_device = 0;
+int TRIGGER3_device = 0;
 int TRIGGER0_offset = 112;
+int TRIGGER1_offset = 0;
+int TRIGGER2_offset = 0;
+int TRIGGER3_offset = 0;
+#elifdef TESTBEAM2024
+int TRIGGER0_device = 193;
+int TRIGGER1_device = 194;
+int TRIGGER2_device = 195;
+int TRIGGER3_device = 196;
+int TRIGGER0_offset = 105;
+int TRIGGER1_offset = 105;
+int TRIGGER2_offset = 0;
+int TRIGGER3_offset = 0;
+#else
+int TRIGGER0_device = 192;
+int TRIGGER1_device = 0;
+int TRIGGER2_device = 0;
+int TRIGGER3_device = 0;
+int TRIGGER0_offset = 112;
+int TRIGGER1_offset = 0;
+int TRIGGER2_offset = 0;
+int TRIGGER3_offset = 0;
+#endif
 
+#ifdef TESTBEAM2023
+int TIMING1_device = 207, TIMING1_chip = 4;
+int TIMING2_device = 207, TIMING2_chip = 5;
+#elifdef TESTBEAM2024
+int TIMING1_device = 200, TIMING1_chip = 2;
+int TIMING2_device = 200, TIMING2_chip = 4;
+#else
 int TIMING1_device = 200, TIMING1_chip = 5;
 int TIMING2_device = 201, TIMING2_chip = 5;
+#endif
 
-int TRACKING1_device = 200, TRACKING1_chip = 4;
-int TRACKING2_device = 201, TRACKING2_chip = 4;
+int TRACKING1_device = 200, TRACKING1_chip = 3;
+int TRACKING2_device = 200, TRACKING2_chip = 5;
 
 std::vector<std::string> devices = {
   "kc705-192",
@@ -31,7 +72,7 @@ std::vector<std::string> devices = {
   "kc705-200",
   "kc705-201",
   "kc705-202",
-  "kc705-207"
+  "kc705-203"
 };
 
 void
@@ -59,8 +100,11 @@ lightwriter(std::vector<std::string> filenames, std::string outfilename, std::st
   std::cout << " --- initialize framer: frame size = " << frame_size << std::endl;
   sipm4eic::framer framer(filenames, frame_size);
   framer.verbose(verbose);
-#if TRIGGER_OFFSET
+#ifdef TRIGGER_OFFSET
   framer.set_trigger_coarse_offset(TRIGGER0_device, TRIGGER0_offset);
+  framer.set_trigger_coarse_offset(TRIGGER1_device, TRIGGER1_offset);
+  framer.set_trigger_coarse_offset(TRIGGER2_device, TRIGGER2_offset);
+  framer.set_trigger_coarse_offset(TRIGGER3_device, TRIGGER3_offset);
 #endif
   
   /** loop over spills **/
@@ -129,6 +173,9 @@ lightwriter(std::vector<std::string> filenames, std::string outfilename, std::st
 
       /** information to define selections **/
       auto TRIGGER0_n = aframe[TRIGGER0_device].triggers.size();
+      auto TRIGGER1_n = aframe[TRIGGER1_device].triggers.size();
+      auto TRIGGER2_n = aframe[TRIGGER2_device].triggers.size();
+      auto TRIGGER3_n = aframe[TRIGGER3_device].triggers.size();
       auto TIMING1_n = aframe[TIMING1_device].hits[TIMING1_chip].size();
       auto TIMING2_n = aframe[TIMING2_device].hits[TIMING2_chip].size();
       auto TRACKING1_n = aframe[TRACKING1_device].hits[TRACKING1_chip].size();
@@ -136,10 +183,21 @@ lightwriter(std::vector<std::string> filenames, std::string outfilename, std::st
 
       /** minimal selection **/
       if ( apply_minimal_selection &&
-	   ( TRIGGER0_n == 0 && TIMING1_n == 0 && TIMING2_n == 0 && TRACKING1_n == 0 && TRACKING2_n == 0) ) continue;
+	   ( TRIGGER0_n == 0 && TRIGGER1_n == 0 && TRIGGER2_n == 0 && TRIGGER3_n == 0 &&
+	     TIMING1_n == 0 && TIMING2_n == 0 &&
+	     TRACKING1_n == 0 && TRACKING2_n == 0 ) ) continue;
       
-      /** selection on Luca's trigger **/
+      /** selection on Luca-AND trigger **/
       if ( apply_trigger0_selection && TRIGGER0_n == 0 ) continue;
+      
+      /** selection on Luca-GEM trigger **/
+      if ( apply_trigger1_selection && TRIGGER1_n == 0 ) continue;
+      
+      /** selection on low-pressure Cherenkov trigger **/
+      if ( apply_trigger2_selection && TRIGGER2_n == 0 ) continue;
+      
+      /** selection on high-pressure Cherenkov trigger **/
+      if ( apply_trigger3_selection && TRIGGER3_n == 0 ) continue;
       
       /** selection on timing scintillators **/
       if ( apply_timing_selection_OR  && (TIMING1_n == 0 && TIMING2_n == 0) ) continue;
@@ -153,6 +211,21 @@ lightwriter(std::vector<std::string> filenames, std::string outfilename, std::st
       auto trigger0 = aframe[TRIGGER0_device].triggers;
       for (auto &trigger : trigger0)
 	io->add_trigger0(trigger.coarse_time_clock() - iframe * frame_size);
+
+      /** fill trigger1 hits **/
+      auto trigger1 = aframe[TRIGGER1_device].triggers;
+      for (auto &trigger : trigger1)
+	io->add_trigger1(trigger.coarse_time_clock() - iframe * frame_size);
+
+      /** fill trigger2 hits **/
+      auto trigger2 = aframe[TRIGGER2_device].triggers;
+      for (auto &trigger : trigger2)
+	io->add_trigger2(trigger.coarse_time_clock() - iframe * frame_size);
+
+      /** fill trigger3 hits **/
+      auto trigger3 = aframe[TRIGGER3_device].triggers;
+      for (auto &trigger : trigger3)
+	io->add_trigger3(trigger.coarse_time_clock() - iframe * frame_size);
 
 #if 0
       /** fill timing hits **/
