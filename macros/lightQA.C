@@ -2,30 +2,21 @@
 #include "../lib/data.h"
 #include "../lib/utility.h"
 
-//#define TESTBEAM2023
-#define TESTBEAM2024
+#define TESTBEAM2023
 
-#ifdef TESTBEAM2023
 int TRIGGER0_device = 192;
 int TRIGGER0_offset = 112;
-#elifdef TESTBEAM2024
-int TRIGGER0_device = 193;
-int TRIGGER0_offset = 0;
-#endif
 
 #ifdef TESTBEAM2023
 int TIMING1_device = 207, TIMING1_chip = 4;
 int TIMING2_device = 207, TIMING2_chip = 5;
-#elifdef TESTBEAM2024
-int TIMING1_device = 200, TIMING1_chip = 2;
-int TIMING2_device = 200, TIMING2_chip = 4;
 #else
 int TIMING1_device = 200, TIMING1_chip = 5;
 int TIMING2_device = 201, TIMING2_chip = 5;
 #endif
 
-int TRACKING1_device = 200, TRACKING1_chip = 3;
-int TRACKING2_device = 200, TRACKING2_chip = 5;
+int TRACKING1_device = 200, TRACKING1_chip = 4;
+int TRACKING2_device = 201, TRACKING2_chip = 4;
 
 const float min_ntiming = 32; // [s]
 
@@ -46,7 +37,6 @@ void lightQA(std::string input_file = "lightdata.root", std::string output_file 
   //  === Tracking
   auto hTrackingHitsTimeInSpill = new TH1F("hTrackingHitsTimeInSpill", "TRACKING readout;time (s);entries", 1000 * (max_tspill - min_tspill), min_tspill, max_tspill);
   auto hTrackingChannelInFrameIntegrated = new TH1F("hTrackingChannelInFrame", "TRACKING readout;number of channels;number of frames", 10, 0, 10);
-  auto hTrackingChannelMap = new TH2F("hTrackingChannelMap", "TRACKING readout;number of channels (TRACKING 1);number of channels (TRACKING 2)", 5, 0, 5, 5, 0, 5);
 
   //  === Timing
   auto hTimingHitsTimeInSpill = new TH1F("hTimingHitsTimeInSpill", "TIMING readout;time (s);entries", 1000 * (max_tspill - min_tspill), min_tspill, max_tspill);
@@ -65,8 +55,8 @@ void lightQA(std::string input_file = "lightdata.root", std::string output_file 
   {
     for (auto iChip = 0; iChip < 6; iChip++)
     {
-      hGenericCoincidenceMapwTrigger[{enumerator, iChip}] = new TH1F(Form("hGenericCoincidenceMapTrigger_d%i_c%i", device_id, iChip), Form("Time coincidences (kc705-%i, chip-%i);hit - trigger time (clock cycles);entries", device_id, iChip), max_tdelta - min_tdelta, min_tdelta, max_tdelta);
-      hGenericCoincidenceMapwTiming[{enumerator, iChip}] = new TH1F(Form("hGenericCoincidenceMapTiming_d%i_c%i", device_id, iChip), Form("Time coincidences (kc705-%i, chip-%i);hit - timing time (clock cycles);entries", device_id, iChip), max_tdelta - min_tdelta, min_tdelta, max_tdelta);
+      hGenericCoincidenceMapwTrigger[{enumerator, iChip}] = new TH1F(Form("hGenericCoincidenceMapTrigger_d%i_c%i", device_id, iChip), Form("Time coincidences (kc705-%i, chip-%i);hit - trigger time (clock cycles);entries", device_id, iChip), 256 * 2, -256, 256);
+      hGenericCoincidenceMapwTiming[{enumerator, iChip}] = new TH1F(Form("hGenericCoincidenceMapTiming_d%i_c%i", device_id, iChip), Form("Time coincidences (kc705-%i, chip-%i);hit - timing time (clock cycles);entries", device_id, iChip), 256 * 2, -256, 256);
     }
   }
 
@@ -169,9 +159,6 @@ void lightQA(std::string input_file = "lightdata.root", std::string output_file 
 
       // === Tracking
       auto tracking_vector = io->get_tracking_vector();
-      std::map<int, std::vector<float>> tracking_first_channels_times, tracking_second_channels_times;
-      auto trk_contributors_first_chip = 0;
-      auto trk_contributors_second_chip = 0;
       std::map<int, std::vector<float>> tracking_channels_times;
       for (auto &tracking : tracking_vector)
       {
@@ -180,27 +167,14 @@ void lightQA(std::string input_file = "lightdata.root", std::string output_file 
         auto tracking_device = devices_enum[tracking.device];
         auto tracking_chip = tracking.chip();
         auto tracking_channel = tracking.eoch();
-        if (tracking.device == TRACKING1_device && tracking.chip() == TRACKING1_chip)
-          tracking_first_channels_times[tracking_channel].push_back(tracking_time);
-        else if (tracking.device == TRACKING2_device && tracking.chip() == TRACKING2_chip)
-          tracking_second_channels_times[tracking_channel].push_back(tracking_time);
         tracking_channels_times[tracking_channel].push_back(tracking_coarse);
         if (timing_available)
           hGenericCoincidenceMapwTiming[{tracking_device, tracking_chip}]->Fill(tracking_time - reference_timing);
         if (trigger_available)
           hGenericCoincidenceMapwTrigger[{tracking_device, tracking_chip}]->Fill(tracking_time - reference_trigger);
-        hTrackingHitsTimeInSpill->Fill( (tracking_time + 256 * frame_id) * sipm4eic::data::coarse_to_ns * 1.e-9);
-      }
-      for (auto [tracking_channel, tracking_time] : tracking_first_channels_times)
-      {
-        trk_contributors_first_chip++;
-      }
-      for (auto [tracking_channel, tracking_time] : tracking_second_channels_times)
-      {
-        trk_contributors_second_chip++;
+        hTrackingHitsTimeInSpill->Fill(tracking_time + 256 * (frame_id)*sipm4eic::data::coarse_to_ns * 1.e-9);
       }
       hTrackingChannelInFrameIntegrated->Fill(tracking_channels_times.size());
-      hTrackingChannelMap->Fill(trk_contributors_first_chip, trk_contributors_second_chip);
 
       // === Cherenkov
       auto cherenkov_vector = io->get_cherenkov_vector();
@@ -227,7 +201,7 @@ void lightQA(std::string input_file = "lightdata.root", std::string output_file 
   gROOT->SetBatch();
   system(Form("mkdir -p %s/", save_dir.c_str()));
 
-  //  gStyle->SetPalette(kInvertedDarkBodyRadiator);
+  gStyle->SetPalette(kInvertedDarkBodyRadiator);
 
   //  === === Trigger
   auto current_canvas = get_std_canvas();
@@ -250,11 +224,6 @@ void lightQA(std::string input_file = "lightdata.root", std::string output_file 
   gPad->SetLogy();
   hTrackingChannelInFrameIntegrated->Draw();
   current_canvas->SaveAs(Form("%s/hTrackingChannelInFrameIntegrated.png", save_dir.c_str()));
-
-  current_canvas = get_std_canvas();
-  gPad->SetLogz();
-  hTrackingChannelMap->Draw("col,text");
-  current_canvas->SaveAs(Form("%s/hTrackingChannelMap.png", save_dir.c_str()));
 
   //  === === Timing
   current_canvas = get_std_canvas();
