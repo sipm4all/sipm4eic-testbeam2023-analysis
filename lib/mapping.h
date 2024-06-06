@@ -2,7 +2,6 @@
 
 namespace sipm4eic {
 
-#if 0
 // maps device and chip to pdu and matrix, generated from /etc/drich/drich_readout.conf 
 std::map<std::array<int, 2>, std::array<int, 2>> pdu_matrix_map = {
   { {195,0} , {1,3} },
@@ -44,80 +43,7 @@ std::map<std::array<int, 2>, std::array<int, 2>> pdu_matrix_map = {
   { {198,2} , {8,4} },
   { {198,3} , {8,4} }
 };
-#endif
 
-  // automatically generated
-  // cat /etc/drich/drich_readout.conf | grep -v "^#" | awk {'print "{ { " substr($4,7,3) " , " $5 " } ,  {" $1 " , " $3 " } } ," '}
-  // cat /etc/drich/drich_readout.conf | grep -v "^#" | awk {'print "{ { " substr($4,7,3) " , " $6 " } ,  {" $1 " , " $3 " } } ," '}
-  std::map<std::array<int, 2>, std::array<int, 2>> pdu_matrix_map = {
-{ { 193 , 0 } ,  {1 , 1 } } ,
-{ { 193 , 2 } ,  {1 , 2 } } ,
-{ { 194 , 0 } ,  {1 , 3 } } ,
-{ { 194 , 2 } ,  {1 , 4 } } ,
-{ { 195 , 0 } ,  {2 , 1 } } ,
-{ { 195 , 2 } ,  {2 , 2 } } ,
-{ { 196 , 0 } ,  {2 , 3 } } ,
-{ { 196 , 2 } ,  {2 , 4 } } ,
-{ { 197 , 0 } ,  {3 , 1 } } ,
-{ { 197 , 2 } ,  {3 , 2 } } ,
-{ { 198 , 0 } ,  {3 , 3 } } ,
-{ { 198 , 2 } ,  {3 , 4 } } ,
-{ { 193 , 4 } ,  {4 , 1 } } ,
-{ { 194 , 4 } ,  {4 , 2 } } ,
-{ { 195 , 4 } ,  {4 , 3 } } ,
-{ { 196 , 4 } ,  {4 , 4 } } ,
-{ { 197 , 4 } ,  {5 , 1 } } ,
-{ { 198 , 4 } ,  {5 , 2 } } ,
-{ { 199 , 0 } ,  {5 , 3 } } ,
-{ { 199 , 2 } ,  {5 , 4 } } ,
-{ { 201 , 0 } ,  {6 , 1 } } ,
-{ { 201 , 2 } ,  {6 , 2 } } ,
-{ { 202 , 0 } ,  {6 , 3 } } ,
-{ { 202 , 2 } ,  {6 , 4 } } ,
-{ { 203 , 0 } ,  {7 , 1 } } ,
-{ { 203 , 2 } ,  {7 , 2 } } ,
-{ { 192 , 0 } ,  {7 , 3 } } ,
-{ { 192 , 2 } ,  {7 , 4 } } ,
-{ { 201 , 4 } ,  {8 , 1 } } ,
-{ { 202 , 4 } ,  {8 , 2 } } ,
-{ { 203 , 4 } ,  {8 , 3 } } ,
-{ { 192 , 4 } ,  {8 , 4 } } ,
-{ { 193 , 1 } ,  {1 , 1 } } ,
-{ { 193 , 3 } ,  {1 , 2 } } ,
-{ { 194 , 1 } ,  {1 , 3 } } ,
-{ { 194 , 3 } ,  {1 , 4 } } ,
-{ { 195 , 1 } ,  {2 , 1 } } ,
-{ { 195 , 3 } ,  {2 , 2 } } ,
-{ { 196 , 1 } ,  {2 , 3 } } ,
-{ { 196 , 3 } ,  {2 , 4 } } ,
-{ { 197 , 1 } ,  {3 , 1 } } ,
-{ { 197 , 3 } ,  {3 , 2 } } ,
-{ { 198 , 1 } ,  {3 , 3 } } ,
-{ { 198 , 3 } ,  {3 , 4 } } ,
-{ { 193 , 5 } ,  {4 , 1 } } ,
-{ { 194 , 5 } ,  {4 , 2 } } ,
-{ { 195 , 5 } ,  {4 , 3 } } ,
-{ { 196 , 5 } ,  {4 , 4 } } ,
-{ { 197 , 5 } ,  {5 , 1 } } ,
-{ { 198 , 5 } ,  {5 , 2 } } ,
-{ { 199 , 1 } ,  {5 , 3 } } ,
-{ { 199 , 3 } ,  {5 , 4 } } ,
-{ { 201 , 1 } ,  {6 , 1 } } ,
-{ { 201 , 3 } ,  {6 , 2 } } ,
-{ { 202 , 1 } ,  {6 , 3 } } ,
-{ { 202 , 3 } ,  {6 , 4 } } ,
-{ { 203 , 1 } ,  {7 , 1 } } ,
-{ { 203 , 3 } ,  {7 , 2 } } ,
-{ { 192 , 1 } ,  {7 , 3 } } ,
-{ { 192 , 3 } ,  {7 , 4 } } ,
-{ { 201 , 5 } ,  {8 , 1 } } ,
-{ { 202 , 5 } ,  {8 , 2 } } ,
-{ { 203 , 5 } ,  {8 , 3 } } ,
-{ { 192 , 5 } ,  {8 , 4 } } ,
-{ { 200 , 3 } ,  {99 , 1 } } ,
-{ { 200 , 5 } ,  {99 , 2 } } 
-};
-  
 /** 
     the mapping is a map where the key is the matrix index (U1, U2, U3, U4) and the value is 
     a vector of the detector-oriented SiPM index on the matrix for a given 
@@ -167,36 +93,19 @@ std::map<int, std::vector<int>> matrix_mapping = {
           12, 13, 14, 15, 11, 10, 9, 8, 4, 5, 6, 7, 3, 2, 1, 0 } }
 };
   
-  //  bool rotateme[8] = {true, true, true, true, false, true, true, false};
-  bool rotateme[8] = {true, true, true, true, true, true, true, true};
-
-#if 0
+  bool rotateme[8] = {true, true, true, true, false, true, true, false};
+  
   std::map<int,int> placement = {
     {6, 1}, {4, 2}, {7, 3},
     {2, 4},         {1, 6},
     {8, 7}, {3, 8}, {5, 9}
   };
-#endif
 
-  std::map<int,int> placement = {
-    {1, 1}, {2, 2}, {3, 3},
-    {8, 4},         {4, 6},
-    {7, 7}, {6, 8}, {5, 9}
-  };
-
-  std::map<int, std::array<float,2>> placement_xy = {
-    {1, {-82. ,  30.}} , {2, {-26. ,  35.}} , {3, {30. ,  30.}},
-    {8, {-82. , -26.}} ,                      {4, {30. , -26.}},
-    {7, {-82. , -82.}} , {6, {-26. , -87.}} , {5, {30. , -82.}}
-  };
-
-#if 0
   std::map<int, std::array<float,2>> placement_xy = {
     {6, {-82. ,  30.}} , {4, {-26. ,  35.}} , {7, {30. ,  30.}},
     {2, {-82. , -26.}} ,                      {1, {30. , -26.}},
     {8, {-82. , -82.}} , {3, {-26. , -87.}} , {5, {30. , -82.}}
   };
-#endif
 
   const std::array<float, 2> position_offset = {1.7, 1.7}; // the centre of the SiPM in the bottom-left corner (A1)
   const std::array<float, 2> position_pitch = {3.2, 3.2}; // the distance between the SiPM cetres
