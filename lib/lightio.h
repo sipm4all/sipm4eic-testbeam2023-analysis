@@ -48,6 +48,7 @@ class lightio {
   unsigned char timing_coarse[max_hits];
   unsigned char timing_fine[max_hits];
   unsigned char timing_tdc[max_hits];
+  char          timing_flyover[max_hits];
   //
   unsigned int tracking_size;            // tracking hits in spill
   unsigned short tracking_n[max_frames]; // tracking hits in frame
@@ -56,6 +57,7 @@ class lightio {
   unsigned char tracking_coarse[max_hits];
   unsigned char tracking_fine[max_hits];
   unsigned char tracking_tdc[max_hits];
+  char          tracking_flyover[max_hits];
   //
   unsigned int cherenkov_size;            // cherenkov hits in spill
   unsigned short cherenkov_n[max_frames]; // cherenkov hits in frame
@@ -64,6 +66,7 @@ class lightio {
   unsigned char cherenkov_coarse[max_hits];
   unsigned char cherenkov_fine[max_hits];
   unsigned char cherenkov_tdc[max_hits];
+  char          cherenkov_flyover[max_hits];
   
   lightio() = default;
   
@@ -75,9 +78,9 @@ class lightio {
   void add_trigger1(unsigned char coarse);
   void add_trigger2(unsigned char coarse);
   void add_trigger3(unsigned char coarse);
-  void add_timing(unsigned char device, unsigned char index, unsigned char coarse, unsigned char fine, unsigned char tdc);
-  void add_tracking(unsigned char device, unsigned char index, unsigned char coarse, unsigned char fine, unsigned char tdc);
-  void add_cherenkov(unsigned char device, unsigned char index, unsigned char coarse, unsigned char fine, unsigned char tdc);
+  void add_timing(unsigned char device, unsigned char index, unsigned char coarse, unsigned char fine, unsigned char tdc, char flyover);
+  void add_tracking(unsigned char device, unsigned char index, unsigned char coarse, unsigned char fine, unsigned char tdc, char flyover);
+  void add_cherenkov(unsigned char device, unsigned char index, unsigned char coarse, unsigned char fine, unsigned char tdc, char flyover);
   void add_frame() { ++frame_n; };
   void fill();
   void write_and_close();  
@@ -210,34 +213,37 @@ lightio::add_trigger3(unsigned char coarse) {
 }
 
 void
-lightio::add_timing(unsigned char device, unsigned char index, unsigned char coarse, unsigned char fine, unsigned char tdc) {
+lightio::add_timing(unsigned char device, unsigned char index, unsigned char coarse, unsigned char fine, unsigned char tdc, char flyover) {
   timing_device[timing_size] = device;
   timing_index[timing_size] = index;
   timing_coarse[timing_size] = coarse;
   timing_fine[timing_size] = fine;
   timing_tdc[timing_size] = tdc;
+  timing_flyover[timing_size] = flyover;
   ++timing_n[frame_n];
   ++timing_size;
 }
 
 void
-lightio::add_tracking(unsigned char device, unsigned char index, unsigned char coarse, unsigned char fine, unsigned char tdc) {
+lightio::add_tracking(unsigned char device, unsigned char index, unsigned char coarse, unsigned char fine, unsigned char tdc, char flyover) {
   tracking_device[tracking_size] = device;
   tracking_index[tracking_size] = index;
   tracking_coarse[tracking_size] = coarse;
   tracking_fine[tracking_size] = fine;
   tracking_tdc[tracking_size] = tdc;
+  tracking_flyover[tracking_size] = flyover;
   ++tracking_n[frame_n];
   ++tracking_size;
 }
 
 void
-lightio::add_cherenkov(unsigned char device, unsigned char index, unsigned char coarse, unsigned char fine, unsigned char tdc) {
+lightio::add_cherenkov(unsigned char device, unsigned char index, unsigned char coarse, unsigned char fine, unsigned char tdc, char flyover) {
   cherenkov_device[cherenkov_size] = device;
   cherenkov_index[cherenkov_size] = index;
   cherenkov_coarse[cherenkov_size] = coarse;
   cherenkov_fine[cherenkov_size] = fine;
   cherenkov_tdc[cherenkov_size] = tdc;
+  cherenkov_flyover[cherenkov_size] = flyover;
   ++cherenkov_n[frame_n];
   ++cherenkov_size;
 }
@@ -317,6 +323,7 @@ lightio::write_to_tree(TTree *t)
   t->Branch("timing_coarse", &timing_coarse, "timing_coarse[timing_size]/b");
   t->Branch("timing_fine", &timing_fine, "timing_fine[timing_size]/b");
   t->Branch("timing_tdc", &timing_tdc, "timing_tdc[timing_size]/b");
+  t->Branch("timing_flyover", &timing_flyover, "timing_flyover[timing_size]/b");
 
   t->Branch("tracking_size", &tracking_size, "tracking_size/i");
   t->Branch("tracking_n", &tracking_n, "tracking_n[frame_n]/s");
@@ -325,6 +332,7 @@ lightio::write_to_tree(TTree *t)
   t->Branch("tracking_coarse", &tracking_coarse, "tracking_coarse[tracking_size]/b");
   t->Branch("tracking_fine", &tracking_fine, "tracking_fine[tracking_size]/b");
   t->Branch("tracking_tdc", &tracking_tdc, "tracking_tdc[tracking_size]/b");
+  t->Branch("tracking_flyover", &tracking_flyover, "tracking_flyover[tracking_size]/B");
 
   t->Branch("cherenkov_size", &cherenkov_size, "cherenkov_size/i");
   t->Branch("cherenkov_n", &cherenkov_n, "cherenkov_n[frame_n]/s");
@@ -333,6 +341,7 @@ lightio::write_to_tree(TTree *t)
   t->Branch("cherenkov_coarse", &cherenkov_coarse, "cherenkov_coarse[cherenkov_size]/b");
   t->Branch("cherenkov_fine", &cherenkov_fine, "cherenkov_fine[cherenkov_size]/b");
   t->Branch("cherenkov_tdc", &cherenkov_tdc, "cherenkov_tdc[cherenkov_size]/b");
+  t->Branch("cherenkov_flyover", &cherenkov_flyover, "cherenkov_flyover[cherenkov_size]/B");
 }
   
 void
@@ -380,6 +389,7 @@ lightio::read_from_tree(TTree *t)
   t->SetBranchAddress("timing_coarse", &timing_coarse);
   t->SetBranchAddress("timing_fine", &timing_fine);
   t->SetBranchAddress("timing_tdc", &timing_tdc);
+  t->SetBranchAddress("timing_flyover", &timing_flyover);
 
   t->SetBranchAddress("tracking_size", &tracking_size);
   t->SetBranchAddress("tracking_n", &tracking_n);
@@ -388,6 +398,7 @@ lightio::read_from_tree(TTree *t)
   t->SetBranchAddress("tracking_coarse", &tracking_coarse);
   t->SetBranchAddress("tracking_fine", &tracking_fine);
   t->SetBranchAddress("tracking_tdc", &tracking_tdc);
+  t->SetBranchAddress("tracking_flyover", &tracking_flyover);
 
   t->SetBranchAddress("cherenkov_size", &cherenkov_size);
   t->SetBranchAddress("cherenkov_n", &cherenkov_n);
@@ -396,6 +407,7 @@ lightio::read_from_tree(TTree *t)
   t->SetBranchAddress("cherenkov_coarse", &cherenkov_coarse);
   t->SetBranchAddress("cherenkov_fine", &cherenkov_fine);
   t->SetBranchAddress("cherenkov_tdc", &cherenkov_tdc);
+  t->SetBranchAddress("cherenkov_flyover", &cherenkov_flyover);
 }
   
 bool
@@ -429,7 +441,7 @@ lightio::next_frame()
   trigger0_vector.clear();
   for (int i = 0; i < trigger0_n[frame_current]; ++i) {
     auto ii = trigger0_offset + i;
-    trigger0_vector.push_back(lightdata(0, 0, trigger0_coarse[ii], 0, 0));
+    trigger0_vector.push_back(lightdata(0, 0, trigger0_coarse[ii], 0, 0, 0));
   }
   trigger0_offset += trigger0_n[frame_current];
   
@@ -437,7 +449,7 @@ lightio::next_frame()
   trigger1_vector.clear();
   for (int i = 0; i < trigger1_n[frame_current]; ++i) {
     auto ii = trigger1_offset + i;
-    trigger1_vector.push_back(lightdata(0, 0, trigger1_coarse[ii], 0, 0));
+    trigger1_vector.push_back(lightdata(0, 0, trigger1_coarse[ii], 0, 0, 0));
   }
   trigger1_offset += trigger1_n[frame_current];
   
@@ -445,7 +457,7 @@ lightio::next_frame()
   trigger2_vector.clear();
   for (int i = 0; i < trigger2_n[frame_current]; ++i) {
     auto ii = trigger2_offset + i;
-    trigger2_vector.push_back(lightdata(0, 0, trigger2_coarse[ii], 0, 0));
+    trigger2_vector.push_back(lightdata(0, 0, trigger2_coarse[ii], 0, 0, 0));
   }
   trigger2_offset += trigger2_n[frame_current];
   
@@ -453,7 +465,7 @@ lightio::next_frame()
   trigger3_vector.clear();
   for (int i = 0; i < trigger3_n[frame_current]; ++i) {
     auto ii = trigger3_offset + i;
-    trigger3_vector.push_back(lightdata(0, 0, trigger3_coarse[ii], 0, 0));
+    trigger3_vector.push_back(lightdata(0, 0, trigger3_coarse[ii], 0, 0, 0));
   }
   trigger3_offset += trigger3_n[frame_current];
   
@@ -462,8 +474,8 @@ lightio::next_frame()
   timing_map.clear();
   for (int i = 0; i < timing_n[frame_current]; ++i) {
     auto ii = timing_offset + i;
-    timing_vector.push_back(lightdata(timing_device[ii], timing_index[ii], timing_coarse[ii], timing_fine[ii], timing_tdc[ii]));
-    timing_map[{timing_device[ii], timing_index[ii]}].push_back(lightdata(timing_device[ii], timing_index[ii], timing_coarse[ii], timing_fine[ii], timing_tdc[ii]));
+    timing_vector.push_back(lightdata(timing_device[ii], timing_index[ii], timing_coarse[ii], timing_fine[ii], timing_tdc[ii], timing_flyover[ii]));
+    timing_map[{timing_device[ii], timing_index[ii]}].push_back(lightdata(timing_device[ii], timing_index[ii], timing_coarse[ii], timing_fine[ii], timing_tdc[ii], timing_flyover[ii]));
   }
   timing_offset += timing_n[frame_current];
   
@@ -472,8 +484,8 @@ lightio::next_frame()
   tracking_map.clear();
   for (int i = 0; i < tracking_n[frame_current]; ++i) {
     auto ii = tracking_offset + i;
-    tracking_vector.push_back(lightdata(tracking_device[ii], tracking_index[ii], tracking_coarse[ii], tracking_fine[ii], tracking_tdc[ii]));
-    tracking_map[{tracking_device[ii], tracking_index[ii]}].push_back(lightdata(tracking_device[ii], tracking_index[ii], tracking_coarse[ii], tracking_fine[ii], tracking_tdc[ii]));
+    tracking_vector.push_back(lightdata(tracking_device[ii], tracking_index[ii], tracking_coarse[ii], tracking_fine[ii], tracking_tdc[ii], tracking_flyover[ii]));
+    tracking_map[{tracking_device[ii], tracking_index[ii]}].push_back(lightdata(tracking_device[ii], tracking_index[ii], tracking_coarse[ii], tracking_fine[ii], tracking_tdc[ii], tracking_flyover[ii]));
   }
   tracking_offset += tracking_n[frame_current];
   
@@ -482,8 +494,8 @@ lightio::next_frame()
   cherenkov_map.clear();
   for (int i = 0; i < cherenkov_n[frame_current]; ++i) {
     auto ii = cherenkov_offset + i;
-    cherenkov_vector.push_back(lightdata(cherenkov_device[ii], cherenkov_index[ii], cherenkov_coarse[ii], cherenkov_fine[ii], cherenkov_tdc[ii]));
-    cherenkov_map[{cherenkov_device[ii], cherenkov_index[ii]}].push_back(lightdata(cherenkov_device[ii], cherenkov_index[ii], cherenkov_coarse[ii], cherenkov_fine[ii], cherenkov_tdc[ii]));
+    cherenkov_vector.push_back(lightdata(cherenkov_device[ii], cherenkov_index[ii], cherenkov_coarse[ii], cherenkov_fine[ii], cherenkov_tdc[ii], cherenkov_flyover[ii]));
+    cherenkov_map[{cherenkov_device[ii], cherenkov_index[ii]}].push_back(lightdata(cherenkov_device[ii], cherenkov_index[ii], cherenkov_coarse[ii], cherenkov_fine[ii], cherenkov_tdc[ii], cherenkov_flyover[ii]));
   }
   cherenkov_offset += cherenkov_n[frame_current];
 

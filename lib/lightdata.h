@@ -11,15 +11,17 @@ class lightdata {
   unsigned char coarse = 0;
   unsigned char fine = 0;
   unsigned char tdc = 0;
-
+  char          flyover = 0;
+  
   lightdata() = default;
   
-  lightdata(unsigned char _device, unsigned char _index, unsigned char _coarse, unsigned char _fine, unsigned char _tdc) :
+  lightdata(unsigned char _device, unsigned char _index, unsigned char _coarse, unsigned char _fine, unsigned char _tdc, char _flyover) :
     device(_device),
     index(_index),
     coarse(_coarse),
     fine(_fine),
-    tdc(_tdc) { };
+    tdc(_tdc) ,
+    flyover(_flyover) { };
 
   bool operator<(const lightdata &rhs) const { return time() < rhs.time(); };
 

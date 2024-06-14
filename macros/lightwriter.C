@@ -4,8 +4,12 @@
 //#define TESTBEAM2023
 #define TESTBEAM2024
 #define TRIGGER_OFFSET
+#define ROLLOVER_FLYOVER
 
 const int frame_size = 256;
+const int rollover_frame_step = 32768 / frame_size;
+const int rollover_flyover_min = -10;
+const int rollover_flyover_max = 10;
 
 bool apply_minimal_selection      = false;
 bool apply_trigger0_selection     = true;
@@ -242,6 +246,7 @@ lightwriter(std::vector<std::string> filenames, std::string outfilename, std::st
 #endif
 		
       /** fill hits **/
+      char flyover = 0;
       for (auto &device : aframe) {
 	auto idevice = device.first;
 	auto adevice = device.second;
@@ -255,16 +260,43 @@ lightwriter(std::vector<std::string> filenames, std::string outfilename, std::st
 	      auto coarse = hit.coarse_time_clock() - iframe * frame_size;
 	      if ( (idevice == TIMING1_device && ichip == TIMING1_chip) ||
 		   (idevice == TIMING2_device && ichip == TIMING2_chip) ) 
-		io->add_timing(idevice, hit.device_index(), coarse, hit.fine, hit.tdc);
+		io->add_timing(idevice, hit.device_index(), coarse, hit.fine, hit.tdc, flyover);
 	      else if ( (idevice == TRACKING1_device && ichip == TRACKING1_chip) ||
 			(idevice == TRACKING2_device && ichip == TRACKING2_chip) ) 
-		io->add_tracking(idevice, hit.device_index(), coarse, hit.fine, hit.tdc);
+		io->add_tracking(idevice, hit.device_index(), coarse, hit.fine, hit.tdc, flyover);
 	      else
-		io->add_cherenkov(idevice, hit.device_index(), coarse, hit.fine, hit.tdc);
+		io->add_cherenkov(idevice, hit.device_index(), coarse, hit.fine, hit.tdc, flyover);
 	    }}}
-	
       } /** end of loop over devices and hits **/
-
+      
+#ifdef ROLLOVER_FLYOVER
+      for (char flyover = rollover_flyover_min; flyover <= rollover_flyover_max; ++flyover) {
+	if (flyover == 0) continue;
+	aframe = framer.frames()[iframe + flyover * rollover_frame_step];
+	for (auto &device : aframe) {
+	  auto idevice = device.first;
+	  auto adevice = device.second;
+	  for (auto &chip : adevice.hits) {
+	    auto ichip = chip.first;
+	    auto achip = chip.second;
+	    for (auto &channel : achip) {
+	      auto ichannel = channel.first;
+	      auto hits = channel.second;
+	      for (auto &hit : hits) {
+		auto coarse = hit.coarse_time_clock() - (iframe + flyover * rollover_frame_step) * frame_size;
+		if ( (idevice == TIMING1_device && ichip == TIMING1_chip) ||
+		     (idevice == TIMING2_device && ichip == TIMING2_chip) ) 
+		  io->add_timing(idevice, hit.device_index(), coarse, hit.fine, hit.tdc, flyover);
+		else if ( (idevice == TRACKING1_device && ichip == TRACKING1_chip) ||
+			  (idevice == TRACKING2_device && ichip == TRACKING2_chip) ) 
+		  io->add_tracking(idevice, hit.device_index(), coarse, hit.fine, hit.tdc, flyover);
+		else
+		  io->add_cherenkov(idevice, hit.device_index(), coarse, hit.fine, hit.tdc, flyover);
+	      }}}
+	} /** end of loop over devices and hits **/
+      }
+#endif
+      
       io->add_frame();
       ++n_frames;
       

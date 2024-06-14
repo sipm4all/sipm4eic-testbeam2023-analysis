@@ -71,6 +71,7 @@ recowriter(std::string lightdata_infilename,
   float x[65534];
   float y[65534];
   float t[65534];
+  int   fo[65534];
   auto fout = TFile::Open(recodata_outfilename.c_str(), "RECREATE");
   auto tout = new TTree("recodata", "recodata");
   tout->Branch("n", &n, "n/s");
@@ -78,6 +79,7 @@ recowriter(std::string lightdata_infilename,
   tout->Branch("x", &x, "x[n]/F");
   tout->Branch("y", &y, "y[n]/F");
   tout->Branch("t", &t, "t[n]/F");
+  tout->Branch("fo", &fo, "fo[n]/I");
 
   int n_spills = 0;
   while (io->next_spill()) {
@@ -115,6 +117,7 @@ recowriter(std::string lightdata_infilename,
         x[n] = pos[0];
         y[n] = pos[1];
 	t[n] = delta * sipm4eic::lightdata::coarse_to_ns;
+	fo[n] = hit.flyover;
         ++n;
       }
 
