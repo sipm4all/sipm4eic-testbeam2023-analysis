@@ -225,6 +225,7 @@ get_geo(lightdata cherenkov)
   int device = cherenkov.device;
   auto chip = cherenkov.chip();
   auto eoch = cherenkov.eoch();
+  if (!pdu_matrix_map.count({device, chip})) return {-1, -1, -1};
   auto pdu = pdu_matrix_map[{device, chip}][0];
   auto matrix = pdu_matrix_map[{device, chip}][1];
   return get_geo(pdu, matrix, eoch);
@@ -235,6 +236,7 @@ get_geo(lightdata cherenkov)
 std::array<float, 2>
 get_position(std::array<int, 3> geo)
 {
+  if (geo[0] < 0 || geo[1] < 0 || geo[2] < 0) return {0., 0.};
   int pdu = geo[0];
   int col = geo[1];
   int row = geo[2];
