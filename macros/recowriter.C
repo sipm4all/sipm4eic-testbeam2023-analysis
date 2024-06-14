@@ -1,6 +1,10 @@
 #include "../lib/lightio.h"
 #include "../lib/mapping.h"
 
+#define TREFCUT
+float Tref_min = 32;
+float Tref_max = 224;
+
 enum EReferenceTime_t {
   kTrigger,
   kTiming
@@ -87,6 +91,9 @@ recowriter(std::string lightdata_infilename,
       /** time from scintillators **/
       auto Tref = reference_time(io, reference_method);
       if (Tref == -666.) continue;
+#ifdef TREFCUT
+      if (Tref < Tref_min || Tref > Tref_max) continue;
+#endif
       
       /** loop over cherenkov hits **/
       auto cherenkov_map = io->get_cherenkov_map();
