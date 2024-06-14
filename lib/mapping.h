@@ -1,8 +1,11 @@
 #include "lightdata.h"
 
+//#define TESTBEAM2023
+#define TESTBEAM2024
+
 namespace sipm4eic {
 
-#if 0
+#ifdef TESTBEAM2023 
 // maps device and chip to pdu and matrix, generated from /etc/drich/drich_readout.conf 
 std::map<std::array<int, 2>, std::array<int, 2>> pdu_matrix_map = {
   { {195,0} , {1,3} },
@@ -44,8 +47,7 @@ std::map<std::array<int, 2>, std::array<int, 2>> pdu_matrix_map = {
   { {198,2} , {8,4} },
   { {198,3} , {8,4} }
 };
-#endif
-
+#elifdef TESTBEAM2024
   // automatically generated
   // cat /etc/drich/drich_readout.conf | grep -v "^#" | awk {'print "{ { " substr($4,7,3) " , " $5 " } ,  {" $1 " , " $3 " } } ," '}
   // cat /etc/drich/drich_readout.conf | grep -v "^#" | awk {'print "{ { " substr($4,7,3) " , " $6 " } ,  {" $1 " , " $3 " } } ," '}
@@ -117,6 +119,7 @@ std::map<std::array<int, 2>, std::array<int, 2>> pdu_matrix_map = {
 { { 200 , 3 } ,  {99 , 1 } } ,
 { { 200 , 5 } ,  {99 , 2 } } 
 };
+#endif
   
 /** 
     the mapping is a map where the key is the matrix index (U1, U2, U3, U4) and the value is 
@@ -170,31 +173,27 @@ std::map<int, std::vector<int>> matrix_mapping = {
   //  bool rotateme[8] = {true, true, true, true, false, true, true, false};
   bool rotateme[8] = {true, true, true, true, true, true, true, true};
 
-#if 0
+#ifdef TESTBEAM2023
   std::map<int,int> placement = {
     {6, 1}, {4, 2}, {7, 3},
     {2, 4},         {1, 6},
     {8, 7}, {3, 8}, {5, 9}
   };
-#endif
-
+  std::map<int, std::array<float,2>> placement_xy = {
+    {6, {-82. ,  30.}} , {4, {-26. ,  35.}} , {7, {30. ,  30.}},
+    {2, {-82. , -26.}} ,                      {1, {30. , -26.}},
+    {8, {-82. , -82.}} , {3, {-26. , -87.}} , {5, {30. , -82.}}
+  };
+#elifdef TESTBEAM2024
   std::map<int,int> placement = {
     {1, 1}, {2, 2}, {3, 3},
     {8, 4},         {4, 6},
     {7, 7}, {6, 8}, {5, 9}
   };
-
   std::map<int, std::array<float,2>> placement_xy = {
     {1, {-82. ,  30.}} , {2, {-26. ,  35.}} , {3, {30. ,  30.}},
     {8, {-82. , -26.}} ,                      {4, {30. , -26.}},
     {7, {-82. , -82.}} , {6, {-26. , -87.}} , {5, {30. , -82.}}
-  };
-
-#if 0
-  std::map<int, std::array<float,2>> placement_xy = {
-    {6, {-82. ,  30.}} , {4, {-26. ,  35.}} , {7, {30. ,  30.}},
-    {2, {-82. , -26.}} ,                      {1, {30. , -26.}},
-    {8, {-82. , -82.}} , {3, {-26. , -87.}} , {5, {30. , -82.}}
   };
 #endif
 
