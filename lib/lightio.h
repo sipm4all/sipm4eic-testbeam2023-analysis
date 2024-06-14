@@ -88,7 +88,7 @@ class lightio {
   void read_from_tree(TTree *t);
   bool next_spill();
   bool next_frame();
-  void reset() { spill_current = frame_current = 0; };
+  void reset() { spill_current = frame_current = -1; };
 
   
   std::vector<lightdata> &get_trigger0_vector() { return trigger0_vector; };
@@ -114,8 +114,8 @@ class lightio {
   TFile *file = nullptr;
   TTree *tree = nullptr;
 
-  int spill_current = 0;
-  int frame_current = 0;
+  int spill_current = -1;
+  int frame_current = -1;
   
   int trigger0_offset = 0;
   int trigger1_offset = 0;
@@ -401,11 +401,12 @@ lightio::read_from_tree(TTree *t)
 bool
 lightio::next_spill()
 {
+  ++spill_current;
   if (spill_current >= tree->GetEntries())
     return false;
   
   tree->GetEntry(spill_current);
-  frame_current = 0;
+  frame_current = -1;
   trigger0_offset = 0;
   trigger1_offset = 0;
   trigger2_offset = 0;
@@ -414,13 +415,13 @@ lightio::next_spill()
   tracking_offset = 0;
   cherenkov_offset = 0;
   
-  ++spill_current;
   return true;
 }
 
 bool
 lightio::next_frame()
 {
+  ++frame_current;
   if (frame_current >= frame_n)
     return false;
 
@@ -486,7 +487,6 @@ lightio::next_frame()
   }
   cherenkov_offset += cherenkov_n[frame_current];
 
-  ++frame_current;
   return true;
 }
 
