@@ -266,6 +266,7 @@ lightwriter(std::vector<std::string> filenames, std::string outfilename, std::st
       } /** end of loop over devices and hits **/
 
       io->add_frame();
+      ++n_frames;
       
     } /** end of loop over frames **/
 
@@ -290,6 +291,7 @@ lightwriter(std::vector<std::string> filenames, std::string outfilename, std::st
   }
 
   std::cout << " --- completed: " << n_spills << " spills " << std::endl;
+  std::cout << "                " << n_frames << " frames written " << std::endl;
 
 }
 
