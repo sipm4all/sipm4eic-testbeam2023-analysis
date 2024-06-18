@@ -10,10 +10,42 @@ enum EReferenceTime_t {
   kTiming
 };
 
+unsigned short
+trigger_mask(sipm4eic::lightio *io, float Tref)
+{
+  unsigned short trgmask = 0;
+
+  auto trigger0_vector = io->get_trigger0_vector();
+  for (auto &hit : trigger0_vector) {
+    if (std::fabs(hit.coarse - Tref) < 25)
+      trgmask |= (1 << 0);
+  }
+  
+  auto trigger1_vector = io->get_trigger1_vector();
+  for (auto &hit : trigger1_vector) {
+    if (std::fabs(hit.coarse - Tref) < 25)
+      trgmask |= (1 << 1);
+  }
+
+  auto trigger2_vector = io->get_trigger2_vector();
+  for (auto &hit : trigger2_vector) {
+    if (std::fabs(hit.coarse - Tref) < 25)
+      trgmask |= (1 << 2);
+  }
+
+  auto trigger3_vector = io->get_trigger3_vector();
+  for (auto &hit : trigger3_vector) {
+    if (std::fabs(hit.coarse - Tref) < 25)
+      trgmask |= (1 << 3);
+  }
+
+  return trgmask;
+}
+
 float
 reference_time(sipm4eic::lightio *io, EReferenceTime_t method = kTrigger)
 {
-  
+
   /** time from trigger **/
   if (method == kTrigger) {
     auto trigger0_vector = io->get_trigger0_vector();
@@ -66,6 +98,7 @@ recowriter(std::string lightdata_infilename,
   sipm4eic::lightdata::load_fine_calibration(finecalib_infilename);
 
   /** prepare output data **/
+  unsigned short trgmask;
   unsigned short n;
   unsigned short ch[65543];
   float x[65534];
@@ -73,6 +106,7 @@ recowriter(std::string lightdata_infilename,
   float t[65534];
   auto fout = TFile::Open(recodata_outfilename.c_str(), "RECREATE");
   auto tout = new TTree("recodata", "recodata");
+  tout->Branch("trgmask", &trgmask, "trgmask/s");
   tout->Branch("n", &n, "n/s");
   tout->Branch("ch", &ch, "ch[n]/s");
   tout->Branch("x", &x, "x[n]/F");
@@ -94,6 +128,9 @@ recowriter(std::string lightdata_infilename,
 #ifdef TREFCUT
       if (Tref < Tref_min || Tref > Tref_max) continue;
 #endif
+
+      /** trigger information **/
+      trgmask = trigger_mask(io, Tref);
       
       /** loop over cherenkov hits **/
       auto cherenkov_map = io->get_cherenkov_map();
