@@ -31,10 +31,10 @@ int TRIGGER0_device = 193;
 int TRIGGER1_device = 194;
 int TRIGGER2_device = 195;
 int TRIGGER3_device = 196;
-int TRIGGER0_offset = 103;
+int TRIGGER0_offset = 105;
 int TRIGGER1_offset = 105;
-int TRIGGER2_offset = 0;
-int TRIGGER3_offset = 0;
+int TRIGGER2_offset = 105;
+int TRIGGER3_offset = 107;
 #else
 int TRIGGER0_device = 192;
 int TRIGGER1_device = 0;
