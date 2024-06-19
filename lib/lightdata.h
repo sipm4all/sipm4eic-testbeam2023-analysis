@@ -61,6 +61,10 @@ lightdata::time() const
 bool
 lightdata::load_fine_calibration(std::string filename)
 {
+  if (filename.empty()) {
+    std::cout << " --- fine calibration not requested " << std::endl;
+    return true;
+  }
   std::cout << " --- loading fine calibration: " << filename << std::endl;
   auto fin = TFile::Open(filename.c_str());
   for (int i = 0; i < 16; ++i) {
