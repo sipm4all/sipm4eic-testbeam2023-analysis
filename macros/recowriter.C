@@ -98,6 +98,9 @@ recowriter(std::string lightdata_infilename,
   sipm4eic::lightdata::load_fine_calibration(finecalib_infilename);
 
   /** prepare output data **/
+  unsigned short spill;
+  unsigned int frame;
+  float tref;
   unsigned short trgmask;
   unsigned short n;
   unsigned short ch[65543];
@@ -106,6 +109,9 @@ recowriter(std::string lightdata_infilename,
   float t[65534];
   auto fout = TFile::Open(recodata_outfilename.c_str(), "RECREATE");
   auto tout = new TTree("recodata", "recodata");
+  tout->Branch("spill", &spill, "spill/s");
+  tout->Branch("frame", &frame, "frame/i");
+  tout->Branch("tref", &tref, "tref/F");
   tout->Branch("trgmask", &trgmask, "trgmask/s");
   tout->Branch("n", &n, "n/s");
   tout->Branch("ch", &ch, "ch[n]/s");
@@ -116,18 +122,21 @@ recowriter(std::string lightdata_infilename,
   int n_spills = 0;
   while (io->next_spill()) {
     std::cout << " --- processing spill: " << n_spills << std::endl;
-
+    spill = n_spills;
+    
     while (io->next_frame()) {
-
+      frame = io->get_current_frame_id();
+      
       /** reset event **/
       n = 0;
 
-      /** time from scintillators **/
+      /** reference time information **/
       auto Tref = reference_time(io, reference_method);
       if (Tref == -666.) continue;
 #ifdef TREFCUT
       if (Tref < Tref_min || Tref > Tref_max) continue;
 #endif
+      tref = Tref * sipm4eic::lightdata::coarse_to_ns;
 
       /** trigger information **/
       trgmask = trigger_mask(io, Tref);
