@@ -2,6 +2,25 @@
 
 #include "lightdata.h"
 
+/*
+  COMMENTS BY ANDREA N. ON THE ADDITIONS
+
+  Each frame of standard frame size 256 (clock intervals) is subdivided in 
+  subframes of size 8, if a subframe is selected (i.e. the number of hits
+  contained is over a chosen threshold) then its index relative to the frame
+  (i.e. how many subframes have been already counted after the start of the 
+  frame) is written in the lightio::subframe_index vector, while the subframe_n
+  vector records the numer of saved subframe indexes for each frame, then to 
+  recover the position of a subframe inside a spill (in terms of clock hits) you
+  just need to apply the formula
+  
+      subframe_pos = frame_index * frame_size + subframe_index * subframe_size
+  
+  note that, as already stated, we hardcoded frame_size to 256 and subframe_size to 8
+  in the code, they are not yet completely generalizable
+   
+*/
+
 namespace sipm4eic {
   
 class lightio {
@@ -13,6 +32,13 @@ class lightio {
   static const int max_frames = 65534;   // maximum number of frames in a spill
   static const int max_triggers = 65534; // maximum number of triggers in a spill
   static const int max_hits = 262144;   // maximum number of hits in a spill
+  static const int max_subframes = 262144; // maximum number of subframes in a spill
+
+/* 
+  Note: the correct number of max_subframes should be 32 (num. of size 8 subframes in a size 256 frame) * max_frames = 2097088
+        but for some reasons it is too big for the ROOT compiler and it does not run on my machine, so we use max_hits since 
+        a subframe must have at least 1 hit which means there are at most max_hits total subframes
+*/
 
   unsigned char part_n;
   unsigned char part_device[max_devices];
@@ -23,7 +49,11 @@ class lightio {
   unsigned int dead_mask[max_devices];
   //  
   unsigned short frame_n;         // number of frames
-  unsigned int frame[max_frames]; // frame index
+  unsigned int frame[max_frames]; // frame index relative to a spill
+  //
+  unsigned int subframe_size;
+  unsigned int subframe_n[max_frames]; // number of selected subframes in each frame
+  unsigned int subframe_index[max_subframes]; // index of subframe relative to a frame
   //
   unsigned int trigger0_size;           // trigger hits in spill
   unsigned char trigger0_n[max_frames]; // trigger hits in frame
@@ -55,6 +85,7 @@ class lightio {
   void add_timing(unsigned char device, unsigned char index, unsigned char coarse, unsigned char fine, unsigned char tdc);
   void add_cherenkov(unsigned char device, unsigned char index, unsigned char coarse, unsigned char fine, unsigned char tdc);
   void add_frame() { ++frame_n; };
+  void add_subframe(unsigned int index);
   void fill();
   void write_and_close();  
   void write_to_tree(std::string filename, std::string treename = "lightdata");
@@ -69,6 +100,7 @@ class lightio {
   std::vector<lightdata> &get_trigger0_vector() { return trigger0_vector; };
   std::vector<lightdata> &get_timing_vector() { return timing_vector; };
   std::vector<lightdata> &get_cherenkov_vector() { return cherenkov_vector; };
+  std::vector<unsigned int> &get_subframe_vector() { return subframe_vector; };
 
   std::map<std::array<unsigned char, 2>, std::vector<lightdata>> &get_timing_map() { return timing_map; };
   std::map<std::array<unsigned char, 2>, std::vector<lightdata>> &get_cherenkov_map() { return cherenkov_map; };
@@ -86,11 +118,13 @@ class lightio {
   int trigger0_offset = 0;
   int timing_offset = 0;
   int cherenkov_offset = 0;
+  int subframe_offset = 0;
 
   std::vector<lightdata> trigger0_vector;
   std::vector<lightdata> timing_vector;
   std::vector<lightdata> cherenkov_vector;
-  
+  std::vector<unsigned int> subframe_vector;
+
   std::map<std::array<unsigned char, 2>, std::vector<lightdata>> timing_map;
   std::map<std::array<unsigned char, 2>, std::vector<lightdata>> cherenkov_map;
   
@@ -106,6 +140,7 @@ lightio::new_spill(unsigned int ispill)
   trigger0_size = 0;
   timing_size = 0;
   cherenkov_size = 0;
+  subframe_size = 0;
 };
 
 void
@@ -114,6 +149,7 @@ lightio::new_frame(unsigned int iframe) {
   trigger0_n[frame_n] = 0;
   timing_n[frame_n] = 0;
   cherenkov_n[frame_n] = 0;
+  subframe_n[frame_n] = 0;
 }
 
 void
@@ -159,11 +195,18 @@ lightio::add_cherenkov(unsigned char device, unsigned char index, unsigned char 
   ++cherenkov_size;
 }
 
+void lightio::add_subframe(unsigned int index) {
+  subframe_index[subframe_size] = index;
+  ++subframe_n[frame_n];
+  ++subframe_size;
+}
+
 void
 lightio::fill() {
   std::cout << " --- fill tree: trigger0_size = " << trigger0_size << std::endl;
   std::cout << "                  timing_size = " << timing_size << std::endl;
   std::cout << "                     cherenkov_size = " << cherenkov_size << std::endl;
+  std::cout << "                        subframe_size = " << subframe_size << std::endl;
   tree->Fill();
 };
  
@@ -221,6 +264,9 @@ lightio::write_to_tree(TTree *t)
   t->Branch("cherenkov_coarse", &cherenkov_coarse, "cherenkov_coarse[cherenkov_size]/b");
   t->Branch("cherenkov_fine", &cherenkov_fine, "cherenkov_fine[cherenkov_size]/b");
   t->Branch("cherenkov_tdc", &cherenkov_tdc, "cherenkov_tdc[cherenkov_size]/b");
+  t->Branch("subframe_size", &subframe_size, "subframe_size/i");
+  t->Branch("subframe_n", &subframe_n, "subframe_n[frame_n]/i");
+  t->Branch("subframe_index", &subframe_index, "subframe_index[subframe_size]/i");
 }
   
 void
@@ -259,6 +305,9 @@ lightio::read_from_tree(TTree *t)
   t->SetBranchAddress("cherenkov_coarse", &cherenkov_coarse);
   t->SetBranchAddress("cherenkov_fine", &cherenkov_fine);
   t->SetBranchAddress("cherenkov_tdc", &cherenkov_tdc);
+  t->SetBranchAddress("subframe_size", &subframe_size);
+  t->SetBranchAddress("subframe_n", &subframe_n);
+  t->SetBranchAddress("subframe_index", &subframe_index);
 }
   
 bool
@@ -272,6 +321,7 @@ lightio::next_spill()
   trigger0_offset = 0;
   timing_offset = 0;
   cherenkov_offset = 0;
+  subframe_offset = 0;
   
   ++spill_current;
   return true;
@@ -283,6 +333,14 @@ lightio::next_frame()
   if (frame_current >= frame_n)
     return false;
 
+// fill subframe vector
+  subframe_vector.clear();
+  for (int i = 0; i < subframe_n[frame_current]; ++i) {
+    auto ii = subframe_offset + i;
+    subframe_vector.push_back(subframe_index[ii]);
+  }
+  subframe_offset += subframe_n[frame_current];
+  
   // fill trigger0 vector
   trigger0_vector.clear();
   for (int i = 0; i < trigger0_n[frame_current]; ++i) {
