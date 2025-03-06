@@ -5,7 +5,7 @@
 
 namespace sipm4eic {
 
-#ifdef TESTBEAM2023 
+#if defined TESTBEAM2023 
 // maps device and chip to pdu and matrix, generated from /etc/drich/drich_readout.conf 
 std::map<std::array<int, 2>, std::array<int, 2>> pdu_matrix_map = {
   { {195,0} , {1,3} },
@@ -47,7 +47,7 @@ std::map<std::array<int, 2>, std::array<int, 2>> pdu_matrix_map = {
   { {198,2} , {8,4} },
   { {198,3} , {8,4} }
 };
-#elifdef TESTBEAM2024
+#elif defined TESTBEAM2024
   // automatically generated
   // cat /etc/drich/drich_readout.conf | grep -v "^#" | awk {'print "{ { " substr($4,7,3) " , " $5 " } ,  {" $1 " , " $3 " } } ," '}
   // cat /etc/drich/drich_readout.conf | grep -v "^#" | awk {'print "{ { " substr($4,7,3) " , " $6 " } ,  {" $1 " , " $3 " } } ," '}
@@ -168,13 +168,13 @@ std::map<int, std::vector<int>> matrix_mapping = {
           12, 13, 14, 15, 11, 10, 9, 8, 4, 5, 6, 7, 3, 2, 1, 0 } }
 };
   
-#ifdef TESTBEAM2023
+#if defined TESTBEAM2023
 bool rotateme[8] = {true, true, true, true, false, true, true, false};
-#elifdef TESTBEAM2024
+#elif defined TESTBEAM2024
 bool rotateme[8] = {true, true, true, true, true, true, true, true};
 #endif
 
-#ifdef TESTBEAM2023
+#if defined TESTBEAM2023
   std::map<int,int> placement = {
     {6, 1}, {4, 2}, {7, 3},
     {2, 4},         {1, 6},
@@ -185,7 +185,7 @@ bool rotateme[8] = {true, true, true, true, true, true, true, true};
     {2, {-82. , -26.}} ,                      {1, {30. , -26.}},
     {8, {-82. , -82.}} , {3, {-26. , -87.}} , {5, {30. , -82.}}
   };
-#elifdef TESTBEAM2024
+#elif defined TESTBEAM2024
   std::map<int,int> placement = {
     {1, 1}, {2, 2}, {3, 3},
     {8, 4},         {4, 6},

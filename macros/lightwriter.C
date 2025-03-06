@@ -7,15 +7,21 @@
 
 const int frame_size = 256;
 
-bool apply_minimal_selection      = false;
-bool apply_trigger0_selection     = true;
-bool apply_trigger1_selection     = false;
-bool apply_trigger2_selection     = false;
-bool apply_trigger3_selection     = false;
-bool apply_timing_selection_OR    = false;
-bool apply_timing_selection_AND   = false;
-bool apply_tracking_selection_OR  = false;
-bool apply_tracking_selection_AND = false;
+std::map<std::string, bool> apply_selection = {
+  { "minimal"     , false } ,
+  { "trigger0"    , false } ,
+  { "trigger1"    , false } ,
+  { "trigger2"    , false } ,
+  { "trigger3"    , false } ,
+  { "timingOR"    , false } ,
+  { "timingAND"   , false } ,
+  { "trackingOR"  , false } ,
+  { "trackingAND" , false } ,
+  { "cherenkov"   , false }
+};
+
+int cherenkov_selection_window    = 8; // clock cycles
+int cherenkov_selection_threshold = 3; // 
 
 #ifdef TESTBEAM2023
 int TRIGGER0_device = 192;
@@ -78,6 +84,24 @@ std::vector<std::string> devices = {
 void
 lightwriter(std::vector<std::string> filenames, std::string outfilename, std::string fineoutfilename, unsigned int max_spill = kMaxUInt, bool verbose = false)
 {
+
+  /** 
+   ** SPLASH
+   **/
+  std::cout << " --- output filename: " << outfilename << std::endl;
+  std::cout << " --- max spills: " << max_spill << std::endl;
+  for (auto &[name, value] : apply_selection) {
+    if (value) {
+      std::cout << " --- apply " << name << " selection " << std::endl;
+      if (name == "cherenkov") {
+	std::cout << " --- cherenkov selection: "
+		  << "window = " << cherenkov_selection_window
+		  << " | "
+		  << "threshold = " << cherenkov_selection_threshold
+		  << std::endl;
+      }
+    }
+  }
   
   /**
    ** CREATE OUTPUT TREE
@@ -106,6 +130,9 @@ lightwriter(std::vector<std::string> filenames, std::string outfilename, std::st
   framer.set_trigger_coarse_offset(TRIGGER2_device, TRIGGER2_offset);
   framer.set_trigger_coarse_offset(TRIGGER3_device, TRIGGER3_offset);
 #endif
+
+  /** utils **/
+  auto hTime = new TH1F("hTime", "", frame_size / cherenkov_selection_window, 0., frame_size);
   
   /** loop over spills **/
   int n_spills = 0, n_frames = 0;
@@ -182,31 +209,64 @@ lightwriter(std::vector<std::string> filenames, std::string outfilename, std::st
       auto TRACKING2_n = aframe[TRACKING2_device].hits[TRACKING2_chip].size();
 
       /** minimal selection **/
-      if ( apply_minimal_selection &&
+      if ( apply_selection["minimal"] &&
 	   ( TRIGGER0_n == 0 && TRIGGER1_n == 0 && TRIGGER2_n == 0 && TRIGGER3_n == 0 &&
 	     TIMING1_n == 0 && TIMING2_n == 0 &&
 	     TRACKING1_n == 0 && TRACKING2_n == 0 ) ) continue;
       
       /** selection on Luca-AND trigger **/
-      if ( apply_trigger0_selection && TRIGGER0_n == 0 ) continue;
+      if ( apply_selection["trigger0"] && TRIGGER0_n == 0 ) continue;
       
       /** selection on Luca-GEM trigger **/
-      if ( apply_trigger1_selection && TRIGGER1_n == 0 ) continue;
+      if ( apply_selection["trigger1"] && TRIGGER1_n == 0 ) continue;
       
       /** selection on low-pressure Cherenkov trigger **/
-      if ( apply_trigger2_selection && TRIGGER2_n == 0 ) continue;
+      if ( apply_selection["trigger2"] && TRIGGER2_n == 0 ) continue;
       
       /** selection on high-pressure Cherenkov trigger **/
-      if ( apply_trigger3_selection && TRIGGER3_n == 0 ) continue;
+      if ( apply_selection["trigger3"] && TRIGGER3_n == 0 ) continue;
       
       /** selection on timing scintillators **/
-      if ( apply_timing_selection_OR  && (TIMING1_n == 0 && TIMING2_n == 0) ) continue;
-      if ( apply_timing_selection_AND && (TIMING1_n == 0 || TIMING2_n == 0) ) continue;
+      if ( apply_selection["timingOR"] && (TIMING1_n == 0 && TIMING2_n == 0) ) continue;
+      if ( apply_selection["timingAND"] && (TIMING1_n == 0 || TIMING2_n == 0) ) continue;
 
       /** selection on tracking matrices **/
-      if ( apply_tracking_selection_OR  && (TRACKING1_n == 0 && TRACKING2_n == 0) ) continue;
-      if ( apply_tracking_selection_AND && (TRACKING1_n == 0 || TRACKING2_n == 0) ) continue;
+      if ( apply_selection["trackingOR"] && (TRACKING1_n == 0 && TRACKING2_n == 0) ) continue;
+      if ( apply_selection["trackingAND"] && (TRACKING1_n == 0 || TRACKING2_n == 0) ) continue;
 
+      /** auto selection on cherenkov hits **/
+      if ( apply_selection["cherenkov"] ) {
+	hTime->Reset();
+	for (auto &device : aframe) {
+	  auto idevice = device.first;
+	  auto adevice = device.second;
+	  for (auto &chip : adevice.hits) {
+	    auto ichip = chip.first;
+	    auto achip = chip.second;
+	    for (auto &channel : achip) {
+	      auto ichannel = channel.first;
+	      auto hits = channel.second;
+	      for (auto &hit : hits) {
+		auto coarse = hit.coarse_time_clock() - iframe * frame_size;
+		if ( (idevice == TIMING1_device && ichip == TIMING1_chip) ||
+		     (idevice == TIMING2_device && ichip == TIMING2_chip) ) 
+		  continue;
+		else if ( (idevice == TRACKING1_device && ichip == TRACKING1_chip) ||
+			  (idevice == TRACKING2_device && ichip == TRACKING2_chip) ) 
+		  continue;
+		else
+		  hTime->Fill(coarse);
+	      }}}
+	}
+	bool is_selected = false;
+	for (int i = 0; i < hTime->GetNbinsX(); ++i) {
+	  if (hTime->GetBinContent(i + 1) < cherenkov_selection_threshold) continue;
+	  is_selected = true;
+	  break;
+	}
+	if (!is_selected) continue;
+      }
+      
       /** fill trigger0 hits **/
       auto trigger0 = aframe[TRIGGER0_device].triggers;
       for (auto &trigger : trigger0)
@@ -298,6 +358,11 @@ lightwriter(std::vector<std::string> filenames, std::string outfilename, std::st
 void
 lightwriter(std::string dirname, std::string outfilename, std::string fineoutfilename, unsigned int max_spill = kMaxUInt, bool verbose = false)
 {
+
+  /** 
+   ** SPLASH
+   **/
+  std::cout << " --- input dirname: " << dirname << std::endl;
 
   /** 
    ** BUILD INPUT FILE LIST
