@@ -77,6 +77,7 @@ namespace sipm4eic
     //    int do_channel() const { return eo2do[eo_channel()]; };
     int calib_index() const { return tdc + 4 * pixel + 16 * column + 128 * chip(); };
     int device_index() const { return eo_channel() + 32 * chip(); };
+    int global_index() const { return (device - 192) * 256 + device_index(); };
     
     /** conversion **/
 
