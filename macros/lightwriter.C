@@ -2,10 +2,13 @@
 #include "../lib/lightio.h"
 
 //#define TESTBEAM2023
-#define TESTBEAM2024
+//#define TESTBEAM2024
+//#define TESTBEAM2025
+#define TESTBEAM2026
 #define TRIGGER_OFFSET
+//#define FINEFILL
 
-const int frame_size = 256;
+const int frame_size = 256; // 256 is golden for TB
 
 std::map<std::string, bool> apply_selection = {
   { "minimal"     , false } ,
@@ -45,12 +48,21 @@ int TRIGGER0_offset = 105;
 int TRIGGER1_offset = 105;
 int TRIGGER2_offset = 105;
 int TRIGGER3_offset = 107;
+#elif defined(TESTBEAM2026)
+int TRIGGER0_device = 200;
+int TRIGGER1_device = 192;
+int TRIGGER2_device = 0;
+int TRIGGER3_device = 0;
+int TRIGGER0_offset = 107;
+int TRIGGER1_offset = 43;
+int TRIGGER2_offset = 0;
+int TRIGGER3_offset = 0;
 #else
-int TRIGGER0_device = 192;
+int TRIGGER0_device = 200;
 int TRIGGER1_device = 0;
 int TRIGGER2_device = 0;
 int TRIGGER3_device = 0;
-int TRIGGER0_offset = 112;
+int TRIGGER0_offset = 0;
 int TRIGGER1_offset = 0;
 int TRIGGER2_offset = 0;
 int TRIGGER3_offset = 0;
@@ -62,14 +74,18 @@ int TIMING2_device = 207, TIMING2_chip = 5;
 #elif defined TESTBEAM2024
 int TIMING1_device = 200, TIMING1_chip = 2;
 int TIMING2_device = 200, TIMING2_chip = 4;
+#elif defined(TESTBEAM2026)
+int TIMING1_device = 200, TIMING1_chip = 0;
+int TIMING2_device = 200, TIMING2_chip = 1;
 #else
 int TIMING1_device = 200, TIMING1_chip = 5;
 int TIMING2_device = 201, TIMING2_chip = 5;
 #endif
 
-int TRACKING1_device = 200, TRACKING1_chip = 3;
-int TRACKING2_device = 200, TRACKING2_chip = 5;
+int TRACKING1_device = 200, TRACKING1_chip = 2;
+int TRACKING2_device = 200, TRACKING2_chip = 3;
 
+#if defined(TESTBEAM2024)
 std::vector<std::string> devices = {
   "kc705-192",
   "kc705-193",
@@ -84,6 +100,31 @@ std::vector<std::string> devices = {
   "kc705-202",
   "kc705-203"
 };
+#elif defined(TESTBEAM2025)
+std::vector<std::string> devices = {
+  "rdo-192",
+  "rdo-193",
+  "rdo-194",
+  "rdo-195",
+  "rdo-196",
+  "rdo-197",
+  "rdo-198",
+  "rdo-199",
+  "kc705-200"
+};
+#elif defined(TESTBEAM2026)
+std::vector<std::string> devices = {
+  "rdo-192",
+  "rdo-193",
+  "rdo-194",
+  "rdo-195",
+  "rdo-196",
+  "rdo-197",
+  "rdo-198",
+  "rdo-199",
+  "kc705-200"
+};
+#endif
 
 void
 lightwriter(std::vector<std::string> filenames, std::string outfilename, std::string fineoutfilename, unsigned int max_spill = kMaxUInt, bool verbose = false)
@@ -153,6 +194,7 @@ lightwriter(std::vector<std::string> filenames, std::string outfilename, std::st
      ** FINE FILL 
      **/
 
+#ifdef FINEFILL
     /** loop over frames **/
     for (auto &frame : framer.frames()) {
       auto iframe = frame.first;
@@ -184,7 +226,8 @@ lightwriter(std::vector<std::string> filenames, std::string outfilename, std::st
 	
       } /** end of loop over devices and hits **/
     } /** end of loop over frames **/
-
+#endif
+    
     /**
      ** LIGHT DATA
      **/
@@ -341,7 +384,7 @@ lightwriter(std::vector<std::string> filenames, std::string outfilename, std::st
 
       io->add_frame();
       ++n_frames;
-      
+
     } /** end of loop over frames **/
 
     io->fill();
@@ -384,7 +427,7 @@ lightwriter(std::string dirname, std::string outfilename, std::string fineoutfil
 
   std::vector<std::string> filenames;
   for (auto device : devices) {
-    for (int ififo = 0; ififo < 25; ++ififo) {
+    for (int ififo = 0; ififo < 33; ++ififo) {
       std::string filename = dirname + "/" + device + "/decoded/alcdaq.fifo_" + std::to_string(ififo) + ".root";
       filenames.push_back(filename);
     }
