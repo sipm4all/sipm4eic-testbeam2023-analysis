@@ -1,11 +1,12 @@
 #include "lightdata.h"
 
 //#define TESTBEAM2023
-#define TESTBEAM2024
+//#define TESTBEAM2024
+#define TESTBEAM2026
 
 namespace sipm4eic {
 
-#ifdef TESTBEAM2023 
+#if defined TESTBEAM2023 
 // maps device and chip to pdu and matrix, generated from /etc/drich/drich_readout.conf 
 std::map<std::array<int, 2>, std::array<int, 2>> pdu_matrix_map = {
   { {195,0} , {1,3} },
@@ -47,7 +48,7 @@ std::map<std::array<int, 2>, std::array<int, 2>> pdu_matrix_map = {
   { {198,2} , {8,4} },
   { {198,3} , {8,4} }
 };
-#elifdef TESTBEAM2024
+#elif defined TESTBEAM2024
   // automatically generated
   // cat /etc/drich/drich_readout.conf | grep -v "^#" | awk {'print "{ { " substr($4,7,3) " , " $5 " } ,  {" $1 " , " $3 " } } ," '}
   // cat /etc/drich/drich_readout.conf | grep -v "^#" | awk {'print "{ { " substr($4,7,3) " , " $6 " } ,  {" $1 " , " $3 " } } ," '}
@@ -117,6 +118,75 @@ std::map<std::array<int, 2>, std::array<int, 2>> pdu_matrix_map = {
 { { 203 , 5 } ,  {8 , 3 } } ,
 { { 192 , 5 } ,  {8 , 4 } } 
 };
+#elif defined TESTBEAM2026
+  // cat /etc/drich/drich_readout.conf | grep -v "^#" | awk {'print "{ { " substr($4,5,3) " , " $5 " } ,  {" $1 " , " $3 " } } ," '}
+  // cat /etc/drich/drich_readout.conf | grep -v "^#" | awk {'print "{ { " substr($4,5,3) " , " $6 " } ,  {" $1 " , " $3 " } } ," '}
+  std::map<std::array<int, 2>, std::array<int, 2>> pdu_matrix_map = {
+{ { 192 , 0 } ,  {1 , 1 } } ,
+{ { 192 , 2 } ,  {1 , 2 } } ,
+{ { 192 , 4 } ,  {1 , 3 } } ,
+{ { 192 , 6 } ,  {1 , 4 } } ,
+{ { 193 , 0 } ,  {2 , 1 } } ,
+{ { 193 , 2 } ,  {2 , 2 } } ,
+{ { 193 , 4 } ,  {2 , 3 } } ,
+{ { 193 , 6 } ,  {2 , 4 } } ,
+{ { 194 , 0 } ,  {3 , 1 } } ,
+{ { 194 , 2 } ,  {3 , 2 } } ,
+{ { 194 , 4 } ,  {3 , 3 } } ,
+{ { 194 , 6 } ,  {3 , 4 } } ,
+{ { 195 , 0 } ,  {4 , 1 } } ,
+{ { 195 , 2 } ,  {4 , 2 } } ,
+{ { 195 , 4 } ,  {4 , 3 } } ,
+{ { 195 , 6 } ,  {4 , 4 } } ,
+{ { 196 , 0 } ,  {5 , 1 } } ,
+{ { 196 , 2 } ,  {5 , 2 } } ,
+{ { 196 , 4 } ,  {5 , 3 } } ,
+{ { 196 , 6 } ,  {5 , 4 } } ,
+{ { 197 , 0 } ,  {6 , 1 } } ,
+{ { 197 , 2 } ,  {6 , 2 } } ,
+{ { 197 , 4 } ,  {6 , 3 } } ,
+{ { 197 , 6 } ,  {6 , 4 } } ,
+{ { 198 , 0 } ,  {7 , 1 } } ,
+{ { 198 , 2 } ,  {7 , 2 } } ,
+{ { 198 , 4 } ,  {7 , 3 } } ,
+{ { 198 , 6 } ,  {7 , 4 } } ,
+{ { 199 , 0 } ,  {8 , 1 } } ,
+{ { 199 , 2 } ,  {8 , 2 } } ,
+{ { 199 , 4 } ,  {8 , 3 } } ,
+{ { 199 , 6 } ,  {8 , 4 } } ,
+{ { 192 , 1 } ,  {1 , 1 } } ,
+{ { 192 , 3 } ,  {1 , 2 } } ,
+{ { 192 , 5 } ,  {1 , 3 } } ,
+{ { 192 , 7 } ,  {1 , 4 } } ,
+{ { 193 , 1 } ,  {2 , 1 } } ,
+{ { 193 , 3 } ,  {2 , 2 } } ,
+{ { 193 , 5 } ,  {2 , 3 } } ,
+{ { 193 , 7 } ,  {2 , 4 } } ,
+{ { 194 , 1 } ,  {3 , 1 } } ,
+{ { 194 , 3 } ,  {3 , 2 } } ,
+{ { 194 , 5 } ,  {3 , 3 } } ,
+{ { 194 , 7 } ,  {3 , 4 } } ,
+{ { 195 , 1 } ,  {4 , 1 } } ,
+{ { 195 , 3 } ,  {4 , 2 } } ,
+{ { 195 , 5 } ,  {4 , 3 } } ,
+{ { 195 , 7 } ,  {4 , 4 } } ,
+{ { 196 , 1 } ,  {5 , 1 } } ,
+{ { 196 , 3 } ,  {5 , 2 } } ,
+{ { 196 , 5 } ,  {5 , 3 } } ,
+{ { 196 , 7 } ,  {5 , 4 } } ,
+{ { 197 , 1 } ,  {6 , 1 } } ,
+{ { 197 , 3 } ,  {6 , 2 } } ,
+{ { 197 , 5 } ,  {6 , 3 } } ,
+{ { 197 , 7 } ,  {6 , 4 } } ,
+{ { 198 , 1 } ,  {7 , 1 } } ,
+{ { 198 , 3 } ,  {7 , 2 } } ,
+{ { 198 , 5 } ,  {7 , 3 } } ,
+{ { 198 , 7 } ,  {7 , 4 } } ,
+{ { 199 , 1 } ,  {8 , 1 } } ,
+{ { 199 , 3 } ,  {8 , 2 } } ,
+{ { 199 , 5 } ,  {8 , 3 } } ,
+{ { 199 , 7 } ,  {8 , 4 } }
+  };
 #endif
   
 /** 
@@ -168,13 +238,15 @@ std::map<int, std::vector<int>> matrix_mapping = {
           12, 13, 14, 15, 11, 10, 9, 8, 4, 5, 6, 7, 3, 2, 1, 0 } }
 };
   
-#ifdef TESTBEAM2023
+#if defined TESTBEAM2023
 bool rotateme[8] = {true, true, true, true, false, true, true, false};
-#elifdef TESTBEAM2024
+#elif defined TESTBEAM2024
+bool rotateme[8] = {true, true, true, true, true, true, true, true};
+#elif defined TESTBEAM2026
 bool rotateme[8] = {true, true, true, true, true, true, true, true};
 #endif
 
-#ifdef TESTBEAM2023
+#if defined TESTBEAM2023
   std::map<int,int> placement = {
     {6, 1}, {4, 2}, {7, 3},
     {2, 4},         {1, 6},
@@ -185,7 +257,18 @@ bool rotateme[8] = {true, true, true, true, true, true, true, true};
     {2, {-82. , -26.}} ,                      {1, {30. , -26.}},
     {8, {-82. , -82.}} , {3, {-26. , -87.}} , {5, {30. , -82.}}
   };
-#elifdef TESTBEAM2024
+#elif defined TESTBEAM2024
+  std::map<int,int> placement = {
+    {1, 1}, {2, 2}, {3, 3},
+    {8, 4},         {4, 6},
+    {7, 7}, {6, 8}, {5, 9}
+  };
+  std::map<int, std::array<float,2>> placement_xy = {
+    {1, {-82. ,  30.}} , {2, {-26. ,  35.}} , {3, {30. ,  30.}},
+    {8, {-82. , -26.}} ,                      {4, {30. , -26.}},
+    {7, {-82. , -82.}} , {6, {-26. , -87.}} , {5, {30. , -82.}}
+  };
+#elif defined TESTBEAM2026
   std::map<int,int> placement = {
     {1, 1}, {2, 2}, {3, 3},
     {8, 4},         {4, 6},
